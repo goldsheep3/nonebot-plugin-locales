@@ -12,13 +12,13 @@ __plugin_meta__ = PluginMetadata(
     description="描述",
     usage="用法",
     type="application",  # library
-    homepage="https://github.com/owner/nonebot-plugin-template",
+    homepage="https://github.com/goldsheep3/nonebot-plugin-locales",
     config=Config,
     supported_adapters=inherit_supported_adapters(
         "nonebot_plugin_alconna", "nonebot_plugin_uninfo"
     ),
     # supported_adapters={"~onebot.v11"}, # 仅 onebot
-    extra={"author": "owner <your@mail.com>"},
+    extra={"author": "goldsheep3 <your@mail.com>"},
 )
 
 from arclet.alconna import Args, Option, Alconna, Arparma, Subcommand
