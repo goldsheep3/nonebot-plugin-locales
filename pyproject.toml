@@ -1,7 +1,7 @@
 [project]
 name = "nonebot-plugin-locales"
 version = "0.1.0"
-description = "插件描述"
+description = "跨适配器暴露可统一的 aid，并支持根据 aid 设置语言"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "goldsheep3", email = "goldsheep3@gmail.com" }]
