@@ -1,0 +1,24 @@
+common:
+  invalid_identity: "参数格式无效，请使用 platform:user_id。"
+bind:
+  help: |-
+    将你的多平台绑定到一起。
+    指令格式：/bind
+    bot 会生成一个绑定命令（/bind {token}），你需要在有效期内向目标平台的 bot 发送该命令完成绑定。
+  token_created: "绑定令牌已生成：/bind {token}\n请在目标平台向机器人发送该命令完成绑定。令牌将在 {ttl_minutes} 分钟后失效。"
+  token_invalid: "绑定令牌无效或已过期。"
+  success: "绑定完成，当前平台身份已绑定到 AID {aid}。"
+  already_bound: "当前平台身份已经绑定到 AID {aid}。"
+unbind:
+  restored: "解绑完成，当前平台身份已恢复到初始 AID {aid}。"
+  target_restored: "解绑完成，{target} 已恢复到初始 AID {aid}。"
+  already_origin: "当前平台身份未绑定到其他 AID。\n当前 AID {aid} 的绑定：{bindings}"
+  target_already_origin: "{target} 未绑定到其他 AID，当前 AID 为 {aid}。"
+language:
+  help: |-
+    设置当前语言。
+    指令格式：/language {language}
+    可用语言：{available}
+  current: "当前语言：{language}"
+  unsupported: "不支持语言 {language}。可用语言：{available}"
+  updated: "语言已设置为 {language}。"

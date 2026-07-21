@@ -5,7 +5,8 @@ require("nonebot_plugin_localstore")
 require("nonebot_plugin_datastore")
 from .config import Config
 
-__plugin_meta__ = PluginMetadata(
+
+__plugin_meta__ = PluginMetadata(  # type: ignore
     name="跨平台语言和用户管理",
     description=(
         "跨适配器暴露可统一的 aid 并支持根据 aid 设置语言，"
@@ -23,6 +24,7 @@ __plugin_meta__ = PluginMetadata(
 
 # --- export api ---
 
+from . import matcher as matcher
 from .api import (
     LocalesAccountError,
     AccountNotFoundError,
@@ -55,6 +57,7 @@ __all__ = [
     "get_language",
     "get_user_id",
     "locales_init",
+    "matcher",
     "set_language",
     "unbind_account",
 ]
