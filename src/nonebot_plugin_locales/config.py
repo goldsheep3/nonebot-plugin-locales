@@ -1,10 +1,10 @@
-from nonebot import get_driver, get_plugin_config
+from nonebot import get_plugin_config
 from pydantic import BaseModel
 
 
 class Config(BaseModel):
     # 默认语言
-    DEFAULT_LANG: str = "en_US"
+    locales_default_lang: str = "zh_CN"
 
 
 # 配置加载

@@ -12,7 +12,7 @@
 采用高内聚、低耦合的模块化目录结构，确保业务逻辑与框架层解耦。
 
 ```text
-nonebot_plugin_account/
+nonebot_plugin_locales/
 ├── __init__.py          # 插件入口，导出 API 与注册 Matcher
 ├── models.py            # 数据库模型 (SQLAlchemy 2.0 声明式映射)
 ├── api.py               # 核心业务逻辑与对外暴露的 API
@@ -66,7 +66,7 @@ class PlatformBinding(Model):
     platform: Mapped[str] = mapped_column(nullable=False, index=True)
     user_id: Mapped[str] = mapped_column(nullable=False)
     aid: Mapped[int] = mapped_column(ForeignKey("locales_user_account.aid"), nullable=False, index=True)
-    created_aid: Mapped[int] = mapped_column(ForeignKey("locales_user_account.aid"), nullable=False, index=True)
+    created_aid: Mapped[int] = mapped_column(ForeignKey("locales_user_account.aid"), nullable=False)
 
 class AccountAuditLog(Model):
     __table_name__ = "locales_account_audit_log"
@@ -157,7 +157,7 @@ def locales_init(lang_dir: Path):
 
     def _dependency():
         async def reply(key: str, **kwargs) -> str:
-            current_lang = "zh_CN" # 实际应用中可从 UserAccount.lang 动态获取
+            current_lang = "zh_CN" # 实际应用中可从 UserAccount.language_code 动态获取
             data = lang_data.get(current_lang, {})
             
             for k in key.split("."):
@@ -207,7 +207,7 @@ Reply = locales_init(_lang_dir)
 
 lang_setting_matcher = on_regex(r"^/lang\s+(?P<lang>\S+)?$", priority=10, block=True)
 bind_matcher = on_regex(r"^/bind\s+(?P<arg>\S+)$", priority=10, block=True)
-unbind_matcher = on_gegex(r"^/unbind\s+(?P<arg>\S+)$", priority=10, block=True)
+unbind_matcher = on_regex(r"^/unbind\s+(?P<arg>\S+)$", priority=10, block=True)
 
 @bind_matcher.handle()
 async def bind_handled(
@@ -232,8 +232,8 @@ from nonebot import require
 from pathlib import Path
 
 # 1. 确保插件已加载
-require("nonebot_plugin_account")
-from nonebot_plugin_account import get_aid, locales_init
+require("nonebot_plugin_locales")
+from nonebot_plugin_locales import get_aid, locales_init
 
 # 2. 初始化本插件的本地化资源
 _my_lang_dir = Path(__file__).parent / "lang"
