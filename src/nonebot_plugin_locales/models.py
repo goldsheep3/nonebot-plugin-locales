@@ -14,11 +14,34 @@ def utc_now() -> datetime:
 class UserAccount(Model):
     __tablename__ = "locales_user_account"
 
-    aid: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="Global account id")
-    language_code: Mapped[str] = mapped_column(String(32), nullable=False, default="zh_CN", comment="Preferred locale code")
-    primary_platform: Mapped[str] = mapped_column(String(64), nullable=False, comment="Platform that created this account")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    aid: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+        comment="Global account id",
+    )
+    language_code: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="zh_CN",
+        comment="Preferred locale code",
+    )
+    primary_platform: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        comment="Platform that created this account",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utc_now,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utc_now,
+        onupdate=utc_now,
+    )
 
 
 class PlatformBinding(Model):
@@ -30,10 +53,29 @@ class PlatformBinding(Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     platform: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     user_id: Mapped[str] = mapped_column(String(191), nullable=False)
-    aid: Mapped[int] = mapped_column(Integer, ForeignKey("locales_user_account.aid"), nullable=False, index=True,)
-    created_aid: Mapped[int] = mapped_column(Integer, ForeignKey("locales_user_account.aid"), nullable=False, index=True,)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    aid: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("locales_user_account.aid"),
+        nullable=False,
+        index=True,
+    )
+    created_aid: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("locales_user_account.aid"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utc_now,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utc_now,
+        onupdate=utc_now,
+    )
 
 
 class AccountAuditLog(Model):
@@ -43,9 +85,21 @@ class AccountAuditLog(Model):
     operation: Mapped[str] = mapped_column(String(32), nullable=False)
     platform: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     user_id: Mapped[str] = mapped_column(String(191), nullable=False)
-    old_aid: Mapped[int] = mapped_column(Integer, ForeignKey("locales_user_account.aid"), nullable=False)
-    new_aid: Mapped[int] = mapped_column(Integer, ForeignKey("locales_user_account.aid"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    old_aid: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("locales_user_account.aid"),
+        nullable=False,
+    )
+    new_aid: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("locales_user_account.aid"),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utc_now,
+    )
 
 
 __all__ = [

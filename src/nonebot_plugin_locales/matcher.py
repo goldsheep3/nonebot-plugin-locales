@@ -148,7 +148,7 @@ async def bind_handle(
                 ttl_minutes=_TOKEN_TTL_SECONDS // 60,
             )
         )
-    
+
     if token_arg.lower() in ("help", "帮助"):
         await bind_matcher.finish(await reply("bind.help"))
 
@@ -164,9 +164,7 @@ async def bind_handle(
         pending.language_code,
     )
     if old_aid is None:
-        await bind_matcher.finish(
-            await reply("bind.already_bound", aid=pending.aid)
-        )
+        await bind_matcher.finish(await reply("bind.already_bound", aid=pending.aid))
 
     await bind_matcher.finish(
         await reply("bind.success", aid=pending.aid, old_aid=old_aid)
@@ -184,9 +182,7 @@ async def unbind_handle(
     if raw_arg:
         identity = _parse_identity(raw_arg)
         if identity is None:
-            await unbind_matcher.finish(
-                await reply("common.invalid_identity")
-            )
+            await unbind_matcher.finish(await reply("common.invalid_identity"))
         platform, user_id = identity
         old_aid = await get_aid(platform, user_id)
         new_aid = await unbind_account(platform, user_id)
@@ -241,7 +237,9 @@ async def language_handle(
     languages = _available_languages()
 
     if language_code.lower() in ("help", "帮助"):
-        await language_matcher.finish(await reply("language.help", available=", ".join(_available_languages())))
+        await language_matcher.finish(
+            await reply("language.help", available=", ".join(_available_languages()))
+        )
 
     if language_code not in languages:
         await language_matcher.finish(

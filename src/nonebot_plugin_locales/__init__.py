@@ -5,12 +5,11 @@ require("nonebot_plugin_localstore")
 require("nonebot_plugin_datastore")
 from .config import Config
 
-
 __plugin_meta__ = PluginMetadata(  # type: ignore
     name="跨平台语言和用户管理",
     description=(
         "跨适配器暴露可统一的 aid 并支持根据 aid 设置语言，"
-        '插件可以手动编写 `assets/locales/zh_CN.yaml` 并使用 '
+        "插件可以手动编写 `assets/locales/zh_CN.yaml` 并使用 "
         '`reply("register.success")` 实现语言自动适配'
     ),
     usage="reply()",
