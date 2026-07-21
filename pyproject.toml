@@ -13,6 +13,7 @@ dependencies = [
   "nonebot-plugin-localstore>=0.7.4,<1.0.0",  # 存储文件
   "nonebot-plugin-uninfo>=0.10.0,<1.0.0",     # 多平台用户信息获取
   "nonebot2>=2.5.0,<3.0.0",
+  "pyyaml>=6.0.0,<7.0.0",
 ]
 
 [project.urls]
