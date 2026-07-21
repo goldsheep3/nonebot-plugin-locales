@@ -1,45 +1,18 @@
 from nonebot import logger, require
-from nonebot.plugin import PluginMetadata, inherit_supported_adapters
+from nonebot.plugin import PluginMetadata
 
-require("nonebot_plugin_uninfo")
-require("nonebot_plugin_alconna")
 require("nonebot_plugin_localstore")
-require("nonebot_plugin_apscheduler")
+require("nonebot_plugin_datastore")
 from .config import Config
 
+
 __plugin_meta__ = PluginMetadata(
-    name="名称",
-    description="描述",
-    usage="用法",
-    type="application",  # library
+    name="跨平台语言和用户管理",
+    description='跨适配器暴露可统一的 aid 并支持根据 aid 设置语言，插件可以手动编写`assets/locales/zh_CN.yaml`并使用`reply("register.success")`实现语言自动适配',
+    usage="reply()",
+    type="library",
     homepage="https://github.com/goldsheep3/nonebot-plugin-locales",
     config=Config,
-    supported_adapters=inherit_supported_adapters(
-        "nonebot_plugin_alconna", "nonebot_plugin_uninfo"
-    ),
-    # supported_adapters={"~onebot.v11"}, # 仅 onebot
-    extra={"author": "goldsheep3 <your@mail.com>"},
+    supported_adapters=None,
+    extra={"author": "goldsheep3 gold_sheep_3@163.com"},
 )
-
-from arclet.alconna import Args, Option, Alconna, Arparma, Subcommand
-from nonebot_plugin_alconna import on_alconna
-from nonebot_plugin_alconna.uniseg import UniMessage
-
-pip = on_alconna(
-    Alconna(
-        "pip",
-        Subcommand(
-            "install",
-            Args["package", str],
-            Option("-r|--requirement", Args["file", str]),
-            Option("-i|--index-url", Args["url", str]),
-        ),
-    )
-)
-
-
-@pip.handle()
-async def _(result: Arparma):
-    package: str = result.other_args["package"]
-    logger.info(f"installing {package}")
-    await UniMessage.text(package).send()
