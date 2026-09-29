@@ -322,17 +322,14 @@ async def get_bindings(
     aid: int,
     *,
     session: AsyncSession | None = None,
-) -> dict[str, list[str]]:
+) -> dict[str, str]:
     async with _session_scope(session) as (scoped_session, _):
         result = await scoped_session.execute(
             select(PlatformBinding.platform, PlatformBinding.user_id)
             .where(PlatformBinding.aid == aid)
             .order_by(PlatformBinding.platform, PlatformBinding.id)
         )
-        bindings: dict[str, list[str]] = {}
-        for platform, user_id in result.all():
-            bindings.setdefault(platform, []).append(user_id)
-        return bindings
+        return dict(result.all())
 
 
 async def get_bind_platform(

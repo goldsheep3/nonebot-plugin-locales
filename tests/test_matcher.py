@@ -10,10 +10,10 @@ def test_plain_arg_extracts_message_text_or_string() -> None:
     assert matcher._plain_arg("  world  ") == "world"
 
 
-def test_format_bindings_sorts_platforms_and_keeps_user_order() -> None:
+def test_format_bindings_sorts_platforms() -> None:
     bindings = {
-        "telegram": ["b", "a"],
-        "onebot": ["1"],
+        "telegram": "b",
+        "onebot": "1",
     }
 
-    assert matcher._format_bindings(bindings) == "onebot:1, telegram:b, telegram:a"
+    assert matcher._format_bindings(bindings) == "onebot:1, telegram:b"

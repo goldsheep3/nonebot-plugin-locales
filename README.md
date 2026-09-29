@@ -148,7 +148,7 @@ async def matcher2_handle(..., reply=Reply):
   - **kwargs: 用于替换语言文本中的`{xxx}`部分。
 
 - **返回**
-  - str: 替换参数后的，对应语言（或在不存在该语言文件的时候的对应回退语言）的文本消息。如果对应文件中不存在对应的 key，会直接返回原键名 key。
+- Awaitable[str]: 异步返回替换参数后的对应语言文本（或在不存在该语言文件时的回退语言文本）。如果对应文件中不存在对应的 key，会返回原键名 key。
 
 - **用法**
 
@@ -156,13 +156,13 @@ async def matcher2_handle(..., reply=Reply):
   # 假定 `register.success.common: "{user_id} Register Success."`
   @matcher1.handle()
   async def matcher1_handle(..., reply=Reply):
-      reply("register.success.common", user_id="123456")
+      message = await reply("register.success.common", user_id="123456")
       # "123456 Register Success."
 
   # 假定下述键不存在
   @matcher2.handle()
   async def matcher2_handle(..., reply=Reply):
-      reply("register.success.special", user_id="123456")
+      message = await reply("register.success.special", user_id="123456")
       # "register.success.special"
   ```
 

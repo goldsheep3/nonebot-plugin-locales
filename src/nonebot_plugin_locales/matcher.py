@@ -22,11 +22,11 @@ from .api import (
     create_binding_token,
     normalize_language_code,
 )
-from .locales import Reply, LocaleStore, create_reply, locales_initialization
+from .locales import Reply, LocaleStore, create_reply, locales_init
 
 _LANG_DIR = Path(__file__).parent / "assets" / "lang"
 _LOCALE_STORE = LocaleStore(_LANG_DIR)
-_Reply = locales_initialization(store=_LOCALE_STORE)
+_Reply = locales_init(store=_LOCALE_STORE)
 
 
 def _plain_arg(args: Any) -> str:
@@ -39,11 +39,9 @@ def _current_identity(bot: Bot, event: Event) -> tuple[str, str]:
     return bot.adapter.get_name().strip().lower(), event.get_user_id().strip()
 
 
-def _format_bindings(bindings: dict[str, list[str]]) -> str:
+def _format_bindings(bindings: dict[str, str]) -> str:
     return ", ".join(
-        f"{platform}:{user_id}"
-        for platform, user_ids in sorted(bindings.items())
-        for user_id in user_ids
+        f"{platform}:{user_id}" for platform, user_id in sorted(bindings.items())
     )
 
 

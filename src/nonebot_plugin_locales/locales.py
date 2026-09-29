@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import re
 from typing import Any, TypeAlias
 from pathlib import Path
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Mapping, Callable, Awaitable
 
 import yaml
 from nonebot.params import Depends
@@ -18,6 +19,7 @@ from .config import plugin_config
 
 LocaleData = dict[str, Any]
 _MISSING = object()
+_LOCALE_FILE_STEM = re.compile(r"^[a-z]{2}_[A-Z]{2}$")
 
 
 Reply: TypeAlias = Callable[..., Awaitable[str]]
@@ -66,10 +68,11 @@ class LocaleStore:
         for file in sorted(self.lang_dir.iterdir()):
             if file.suffix.lower() not in {".yaml", ".yml"}:
                 continue
-            try:
-                language_code = normalize_language_code(file.stem)
-            except ValueError as e:
-                raise LocaleFileError(f"invalid locale file name {file.name}") from e
+            if not _LOCALE_FILE_STEM.fullmatch(file.stem):
+                raise LocaleFileError(
+                    f"invalid locale file name {file.name}; expected xx_XX"
+                )
+            language_code = file.stem
             if language_code in self.languages:
                 raise LocaleFileError(
                     f"duplicate locale language code {language_code}: {file.name}"
@@ -155,7 +158,7 @@ def create_reply(store: LocaleStore, language_code: str | None = None) -> Reply:
     return reply
 
 
-def locales_initialization(
+def locales_init(
     lang_dir: str | Path | None = None,
     *,
     store: LocaleStore | None = None,
@@ -182,19 +185,12 @@ def locales_initialization(
         return create_reply(store, language_code)
 
     return Depends(_dependency)
-
-
-def locales_init(lang_dir: str | Path | None = None, **kwargs):
-    return locales_initialization(lang_dir=lang_dir, **kwargs)
-
-
 __all__ = [
     "LocaleError",
     "LocaleFileError",
     "LocaleStore",
     "Reply",
     "create_reply",
-    "locales_initialization",
     "locales_init",
     "normalize_language_code",
 ]

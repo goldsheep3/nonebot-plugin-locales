@@ -136,8 +136,8 @@ async def test_bind_account_records_log_and_unbind_restores_origin(
         "telegram",
     }
     assert await get_bindings(owner_aid, session=db_session) == {
-        "onebot": ["owner"],
-        "telegram": ["member"],
+        "onebot": "owner",
+        "telegram": "member",
     }
 
     restored_aid = await unbind_account("telegram", "member", session=db_session)
