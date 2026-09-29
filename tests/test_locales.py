@@ -36,6 +36,26 @@ def test_locale_store_normalizes_language_code(tmp_path: Path) -> None:
     assert store.render("message", "en-us") == "hello"
 
 
+def test_locale_store_normalizes_language_file_names(tmp_path: Path) -> None:
+    _write_language(tmp_path, "EN-us", "message: hello")
+
+    store = LocaleStore(tmp_path, default_language="en_US")
+
+    assert list(store.languages) == ["en_US"]
+    assert store.has_language("en-us")
+    assert store.render("message", "en_US") == "hello"
+
+
+def test_locale_store_rejects_duplicate_normalized_language_file_names(
+    tmp_path: Path,
+) -> None:
+    _write_language(tmp_path, "en_US", "message: first")
+    _write_language(tmp_path, "en-us", "message: second")
+
+    with pytest.raises(LocaleFileError, match="duplicate locale language code en_US"):
+        LocaleStore(tmp_path, default_language="en_US")
+
+
 def test_locale_store_uses_default_language_and_deduplicates_chain(
     tmp_path: Path,
 ) -> None:

@@ -67,7 +67,17 @@ class LocaleStore:
         for file in sorted(self.lang_dir.iterdir()):
             if file.suffix.lower() not in {".yaml", ".yml"}:
                 continue
-            self.languages[file.stem] = self._load_yaml(file)
+            try:
+                language_code = normalize_language_code(file.stem)
+            except ValueError as e:
+                raise LocaleFileError(
+                    f"invalid locale file name {file.name}"
+                ) from e
+            if language_code in self.languages:
+                raise LocaleFileError(
+                    f"duplicate locale language code {language_code}: {file.name}"
+                )
+            self.languages[language_code] = self._load_yaml(file)
 
     def render(
         self,
