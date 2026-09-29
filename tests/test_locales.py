@@ -28,6 +28,54 @@ greeting:
     assert store.render("greeting.named", name="青羽") == "你好，青羽！"
 
 
+def test_locale_store_uses_default_language_and_deduplicates_chain(
+    tmp_path: Path,
+) -> None:
+    _write_language(tmp_path, "zh_CN", "message: {ok: 默认}")
+    store = LocaleStore(
+        tmp_path,
+        default_language="zh_CN",
+        fallback_language="zh_CN",
+    )
+
+    assert store._language_chain("zh_CN") == ("zh_CN",)
+    assert store.render("message.ok") == "默认"
+    assert store.has_language("zh_CN")
+    assert not store.has_language("en_US")
+
+
+def test_locale_store_returns_original_key_when_key_is_blank(
+    tmp_path: Path,
+) -> None:
+    store = LocaleStore(tmp_path, default_language="zh_CN")
+
+    assert store.render("  ") == "  "
+
+
+def test_locale_store_reload_handles_missing_directory(tmp_path: Path) -> None:
+    store = LocaleStore(tmp_path / "missing", default_language="zh_CN")
+
+    assert store.languages == {}
+    assert store.render("message.ok") == "message.ok"
+
+
+def test_locale_store_rejects_file_as_language_directory(tmp_path: Path) -> None:
+    file_path = tmp_path / "not-a-directory"
+    file_path.write_text("content", encoding="utf-8")
+
+    with pytest.raises(LocaleFileError, match="not a directory"):
+        LocaleStore(file_path, default_language="zh_CN")
+
+
+def test_locale_store_ignores_non_yaml_files(tmp_path: Path) -> None:
+    (tmp_path / "README.txt").write_text("ignored", encoding="utf-8")
+    _write_language(tmp_path, "zh_CN", "message: {ok: 完成}")
+
+    store = LocaleStore(tmp_path, default_language="zh_CN")
+
+    assert list(store.languages) == ["zh_CN"]
+
+
 def test_locale_store_falls_back_to_configured_language(tmp_path: Path) -> None:
     _write_language(
         tmp_path,
@@ -129,6 +177,15 @@ def test_locales_init_rejects_ambiguous_source(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="cannot be provided together"):
         locales_init(tmp_path, store=store)
+
+
+def test_locale_store_format_returns_template_on_invalid_format(
+    tmp_path: Path,
+) -> None:
+    _write_language(tmp_path, "zh_CN", 'message: {value: "{name!"}')
+    store = LocaleStore(tmp_path, default_language="zh_CN")
+
+    assert store.render("message.value", name="Alice") == "{name!"
 
 
 async def test_create_reply_returns_async_renderer(tmp_path: Path) -> None:

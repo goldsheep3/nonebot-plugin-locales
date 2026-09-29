@@ -9,6 +9,29 @@ def _reset_token_cache() -> None:
     matcher._aid_tokens.clear()
 
 
+def test_plain_arg_extracts_message_text_or_string() -> None:
+    class Message:
+        def extract_plain_text(self) -> str:
+            return "  hello  "
+
+    assert matcher._plain_arg(Message()) == "hello"
+    assert matcher._plain_arg("  world  ") == "world"
+
+
+def test_cleanup_tokens_removes_orphaned_reverse_index() -> None:
+    matcher._pending_tokens["token"] = matcher._PendingBinding(
+        aid=1,
+        language_code="zh_CN",
+        created_at=1.0,
+    )
+    matcher._aid_tokens[1] = "different-token"
+
+    matcher._cleanup_tokens(now=1.0 + matcher._TOKEN_TTL_SECONDS + 0.1)
+
+    assert "token" not in matcher._pending_tokens
+    assert matcher._aid_tokens[1] == "different-token"
+
+
 def test_format_bindings_sorts_platforms_and_keeps_user_order() -> None:
     bindings = {
         "telegram": ["b", "a"],

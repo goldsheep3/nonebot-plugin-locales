@@ -100,6 +100,7 @@ asyncio_default_fixture_loop_scope = "session"
 
 [tool.ruff]
 line-length = 88
+extend-exclude = ["src/nonebot_plugin_locales/migrations"]
 
 [tool.ruff.format]
 line-ending = "lf"
