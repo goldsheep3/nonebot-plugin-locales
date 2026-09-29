@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Any, TypeAlias
 from pathlib import Path
-from collections.abc import Mapping, Awaitable
+from collections.abc import Awaitable, Callable, Mapping
 
 import yaml
 from nonebot.params import Depends
@@ -20,8 +20,7 @@ LocaleData = dict[str, Any]
 _MISSING = object()
 
 
-class Reply(Protocol):
-    def __call__(self, key: str, **kwargs: object) -> Awaitable[str]: ...
+Reply: TypeAlias = Callable[..., Awaitable[str]]
 
 
 class LocaleError(ValueError):

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from pydantic import TypeAdapter
 
 from nonebot_plugin_locales.locales import (
     LocaleStore,
@@ -228,4 +229,8 @@ message:
     store = LocaleStore(tmp_path, default_language="zh_CN")
     reply = create_reply(store, "zh_CN")
 
+    from nonebot_plugin_locales.locales import Reply
+
+    assert callable(reply)
+    assert TypeAdapter(Reply).validate_python(reply) is reply
     assert await reply("message.ok", count=3) == "完成 3"
