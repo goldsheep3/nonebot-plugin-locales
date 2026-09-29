@@ -60,19 +60,21 @@ def test_create_token_replaces_previous_token_for_same_aid(
     assert matcher._take_token(new_token) is None
 
 
-def test_get_token_does_not_consume_token() -> None:
-    matcher._pending_tokens["token"] = matcher._PendingBinding(
+def test_take_token_consumes_token_before_binding_work() -> None:
+    expected = matcher._PendingBinding(
         aid=1,
         language_code="zh_CN",
         created_at=matcher.time.monotonic(),
     )
+    matcher._pending_tokens["token"] = expected
     matcher._aid_tokens[1] = "token"
 
-    pending = matcher._get_token("token")
+    pending = matcher._take_token("token")
 
-    assert pending is matcher._pending_tokens["token"]
-    assert matcher._take_token("token") is pending
-    assert matcher._get_token("token") is None
+    assert pending is expected
+    assert "token" not in matcher._pending_tokens
+    assert 1 not in matcher._aid_tokens
+    assert matcher._take_token("token") is None
 
 
 def test_cleanup_tokens_honors_zero_timestamp(

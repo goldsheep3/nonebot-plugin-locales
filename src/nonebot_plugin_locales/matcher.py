@@ -80,12 +80,8 @@ def _create_token(aid: int, language_code: str) -> str:
     return token
 
 
-def _get_token(token: str) -> _PendingBinding | None:
-    _cleanup_tokens()
-    return _pending_tokens.get(token)
-
-
 def _take_token(token: str) -> _PendingBinding | None:
+    _cleanup_tokens()
     pending = _pending_tokens.pop(token, None)
     if pending is None:
         return None
@@ -137,7 +133,9 @@ async def bind_handle(
     if token_arg.lower() in ("help", "帮助"):
         await bind_matcher.finish(await reply("bind.help"))
 
-    pending = _get_token(token_arg)
+    # Claim the token before awaiting database work so only one concurrent
+    # handler can use it. Binding failures intentionally do not restore it.
+    pending = _take_token(token_arg)
     if pending is None:
         await bind_matcher.finish(await reply("bind.token_invalid"))
 
@@ -153,7 +151,6 @@ async def bind_handle(
         await bind_matcher.finish(
             await reply("bind.platform_conflict", platform=platform)
         )
-    _take_token(token_arg)
     if old_aid is None:
         await bind_matcher.finish(await reply("bind.already_bound", aid=pending.aid))
 
