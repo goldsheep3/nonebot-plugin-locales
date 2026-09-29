@@ -5,12 +5,13 @@ import hashlib
 import secrets
 from datetime import timedelta
 from dataclasses import dataclass
-from typing import overload
+from typing import overload, cast, Any
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.engine import CursorResult
 from nonebot.adapters import Bot, Event
 from nonebot_plugin_datastore import create_session
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -424,15 +425,18 @@ async def claim_binding_token(
         aid = binding_token.aid
         language_code = binding_token.language_code
 
-        result = await scoped_session.execute(
-            delete(BindingToken)
-            .where(
-                BindingToken.aid == aid,
-                BindingToken.token_hash == token_hash,
-                BindingToken.expires_at > now,
+        result = cast(
+            CursorResult[Any],
+            await scoped_session.execute(
+                delete(BindingToken)
+                .where(
+                    BindingToken.aid == aid,
+                    BindingToken.token_hash == token_hash,
+                    BindingToken.expires_at > now,
+                )
+                .execution_options(synchronize_session="fetch")
+                )
             )
-            .execution_options(synchronize_session="fetch")
-        )
         if result.rowcount != 1:
             return None
 
