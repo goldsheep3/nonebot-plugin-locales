@@ -11,6 +11,7 @@ from nonebot.params import CommandArg
 from nonebot.adapters import Bot, Event
 
 from .api import (
+    BindingConflictError,
     get_aid,
     bind_account,
     find_user_id,
@@ -140,12 +141,17 @@ async def bind_handle(
         await bind_matcher.finish(await reply("bind.token_invalid"))
 
     platform, user_id = _current_identity(bot, event)
-    old_aid = await bind_account(
-        pending.aid,
-        platform,
-        user_id,
-        pending.language_code,
-    )
+    try:
+        old_aid = await bind_account(
+            pending.aid,
+            platform,
+            user_id,
+            pending.language_code,
+        )
+    except BindingConflictError:
+        await bind_matcher.finish(
+            await reply("bind.platform_conflict", platform=platform)
+        )
     _take_token(token_arg)
     if old_aid is None:
         await bind_matcher.finish(await reply("bind.already_bound", aid=pending.aid))

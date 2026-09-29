@@ -48,6 +48,7 @@ class PlatformBinding(Model):
     __tablename__ = "locales_platform_binding"
     __table_args__ = (
         UniqueConstraint("platform", "user_id", name="uq_locales_platform_user"),
+        UniqueConstraint("aid", "platform", name="uq_locales_aid_platform"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

@@ -5,6 +5,7 @@ bind:
     The bot will generate a linking command (/bind {token}), which you need to send to the bot on the target platform within the validity period to complete the link.
   token_created: "Binding token generated: /bind {token}\nSend this command to the bot on the target platform to complete binding. The token expires in {ttl_minutes} minutes."
   token_invalid: "The binding token is invalid or expired."
+  platform_conflict: "The target AID already has an identity on {platform}. Unbind it first."
   success: "Binding completed. This platform identity is now bound to AID {aid}."
   already_bound: "This platform identity is already bound to AID {aid}."
 unbind:

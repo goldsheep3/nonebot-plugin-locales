@@ -26,6 +26,10 @@ class BindingNotFoundError(LocalesAccountError):
     """平台身份绑定不存在。"""
 
 
+class BindingConflictError(LocalesAccountError):
+    """AID 已绑定同一平台的其他身份。"""
+
+
 @asynccontextmanager
 async def _session_scope(
     session: AsyncSession | None = None,
@@ -96,6 +100,20 @@ async def _get_binding(
         select(PlatformBinding).where(
             PlatformBinding.platform == platform,
             PlatformBinding.user_id == user_id,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def _get_account_platform_binding(
+    session: AsyncSession,
+    aid: int,
+    platform: str,
+) -> PlatformBinding | None:
+    result = await session.execute(
+        select(PlatformBinding).where(
+            PlatformBinding.aid == aid,
+            PlatformBinding.platform == platform,
         )
     )
     return result.scalar_one_or_none()
@@ -326,12 +344,30 @@ async def bind_account(
         if target_account is None:
             raise AccountNotFoundError(f"aid {aid} does not exist")
 
-        binding = await _get_or_create_binding(
+        binding = await _get_binding(
             scoped_session,
             normalized_platform,
             normalized_user_id,
-            normalized_language,
         )
+        existing_binding = await _get_account_platform_binding(
+            scoped_session,
+            aid,
+            normalized_platform,
+        )
+        if existing_binding is not None and (
+            binding is None or existing_binding.id != binding.id
+        ):
+            raise BindingConflictError(
+                f"aid {aid} already has a binding on {normalized_platform}"
+            )
+        if binding is None:
+            binding = await _create_identity(
+                scoped_session,
+                normalized_platform,
+                normalized_user_id,
+                normalized_language,
+            )
+
         old_aid = binding.aid
         binding.aid = aid
 
@@ -375,6 +411,16 @@ async def unbind_account(
             normalized_user_id,
         )
         old_aid = binding.aid
+        existing_binding = await _get_account_platform_binding(
+            scoped_session,
+            binding.created_aid,
+            normalized_platform,
+        )
+        if existing_binding is not None and existing_binding.id != binding.id:
+            raise BindingConflictError(
+                f"aid {binding.created_aid} already has a binding on "
+                f"{normalized_platform}"
+            )
         binding.aid = binding.created_aid
 
         if old_aid != binding.created_aid:
@@ -395,6 +441,7 @@ async def unbind_account(
 
 __all__ = [
     "AccountNotFoundError",
+    "BindingConflictError",
     "BindingNotFoundError",
     "LocalesAccountError",
     "bind_account",

@@ -1,7 +1,10 @@
+import pytest
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nonebot_plugin_locales.api import (
+    BindingConflictError,
     get_aid,
     bind_account,
     find_user_id,
@@ -78,6 +81,54 @@ async def test_bind_account_records_log_and_unbind_restores_origin(
         (member_origin_aid, owner_aid),
         (owner_aid, member_origin_aid),
     ]
+
+
+async def test_bind_account_rejects_second_identity_on_same_platform(
+    db_session: AsyncSession,
+) -> None:
+    owner_aid = await get_aid("onebot", "owner", session=db_session)
+    first_origin_aid = await get_aid("telegram", "first", session=db_session)
+    second_origin_aid = await get_aid("telegram", "second", session=db_session)
+    await bind_account(
+        owner_aid,
+        "telegram",
+        "first",
+        "zh_CN",
+        session=db_session,
+    )
+
+    with pytest.raises(BindingConflictError):
+        await bind_account(
+            owner_aid,
+            "telegram",
+            "second",
+            "en_US",
+            session=db_session,
+        )
+
+    assert await find_user_id(owner_aid, "telegram", session=db_session) == "first"
+    assert await get_aid("telegram", "second", session=db_session) == second_origin_aid
+    assert await get_language(owner_aid, session=db_session) == "zh_CN"
+    assert await get_language(second_origin_aid, session=db_session) == "zh_CN"
+    assert first_origin_aid != second_origin_aid
+
+
+async def test_database_rejects_duplicate_aid_platform(
+    db_session: AsyncSession,
+) -> None:
+    aid = await get_aid("onebot", "owner", session=db_session)
+    db_session.add(
+        PlatformBinding(
+            platform="onebot",
+            user_id="other",
+            aid=aid,
+            created_aid=aid,
+        )
+    )
+
+    with pytest.raises(IntegrityError):
+        await db_session.flush()
+    await db_session.rollback()
 
 
 async def test_set_language_updates_current_and_created_accounts(
