@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from nonebot_plugin_locales.api import (
     BindingConflictError,
+    BindingTokenCreateError,
     get_aid,
     get_user_id,
     bind_account,
@@ -90,6 +91,23 @@ async def test_new_binding_token_replaces_previous_token(
     claim = await claim_binding_token(new_token, session=db_session)
     assert claim is not None
     assert claim.language_code == "en_US"
+
+
+async def test_binding_token_integrity_conflict_requests_retry(
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from nonebot_plugin_locales import api
+
+    aid = await get_aid("onebot", "owner", session=db_session)
+
+    async def fail_finalize(*args: object) -> None:
+        raise IntegrityError("insert binding token", {}, Exception("conflict"))
+
+    monkeypatch.setattr(api, "_finalize", fail_finalize)
+
+    with pytest.raises(BindingTokenCreateError, match="please retry"):
+        await create_binding_token(aid, "zh_CN", session=db_session)
 
 
 async def test_bind_account_records_log_and_unbind_restores_origin(

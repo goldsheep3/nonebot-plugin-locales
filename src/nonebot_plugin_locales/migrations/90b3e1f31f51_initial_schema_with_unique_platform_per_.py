@@ -72,6 +72,32 @@ def upgrade() -> None:
         )
 
     op.create_table(
+        "locales_binding_token",
+        sa.Column("aid", sa.Integer(), nullable=False),
+        sa.Column("token_hash", sa.String(length=64), nullable=False),
+        sa.Column("language_code", sa.String(length=32), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["aid"],
+            ["locales_user_account.aid"],
+            name=op.f("fk_locales_binding_token_aid_locales_user_account"),
+        ),
+        sa.PrimaryKeyConstraint("aid", name=op.f("pk_locales_binding_token")),
+    )
+    with op.batch_alter_table("locales_binding_token", schema=None) as batch_op:
+        batch_op.create_index(
+            batch_op.f("ix_locales_binding_token_expires_at"),
+            ["expires_at"],
+            unique=False,
+        )
+        batch_op.create_index(
+            batch_op.f("ix_locales_binding_token_token_hash"),
+            ["token_hash"],
+            unique=True,
+        )
+
+    op.create_table(
         "locales_platform_binding",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("platform", sa.String(length=64), nullable=False),
@@ -120,6 +146,11 @@ def downgrade() -> None:
         batch_op.drop_index(batch_op.f("ix_locales_platform_binding_aid"))
 
     op.drop_table("locales_platform_binding")
+    with op.batch_alter_table("locales_binding_token", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_locales_binding_token_token_hash"))
+        batch_op.drop_index(batch_op.f("ix_locales_binding_token_expires_at"))
+
+    op.drop_table("locales_binding_token")
     with op.batch_alter_table("locales_account_audit_log", schema=None) as batch_op:
         batch_op.drop_index(batch_op.f("ix_locales_account_audit_log_platform"))
 

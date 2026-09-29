@@ -27,6 +27,7 @@ from . import matcher as matcher
 from .api import (
     BIND_TOKEN_TTL,
     BindingTokenClaim,
+    BindingTokenCreateError,
     LocalesAccountError,
     AccountNotFoundError,
     BindingConflictError,
@@ -52,6 +53,7 @@ __all__ = [
     "BindingConflictError",
     "BindingNotFoundError",
     "BindingTokenClaim",
+    "BindingTokenCreateError",
     "LocaleError",
     "LocaleFileError",
     "LocaleStore",

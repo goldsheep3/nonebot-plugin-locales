@@ -51,6 +51,10 @@ class BindingConflictError(LocalesAccountError):
     """AID 已绑定同一平台的其他身份。"""
 
 
+class BindingTokenCreateError(LocalesAccountError):
+    """绑定令牌因并发签发冲突而未能创建。"""
+
+
 @asynccontextmanager
 async def _session_scope(
     session: AsyncSession | None = None,
@@ -372,34 +376,39 @@ async def create_binding_token(
     now = utc_now()
     expires_at = now + BIND_TOKEN_TTL
 
-    async with _session_scope(session) as (scoped_session, owns_session):
-        await scoped_session.execute(
-            delete(BindingToken)
-            .where(BindingToken.expires_at <= now)
-            .execution_options(synchronize_session="fetch")
-        )
-        account = await scoped_session.get(UserAccount, aid)
-        if account is None:
-            raise AccountNotFoundError(f"aid {aid} does not exist")
-
-        binding_token = await scoped_session.get(BindingToken, aid)
-        if binding_token is None:
-            scoped_session.add(
-                BindingToken(
-                    aid=aid,
-                    token_hash=token_hash,
-                    language_code=normalized_language,
-                    expires_at=expires_at,
-                )
+    try:
+        async with _session_scope(session) as (scoped_session, owns_session):
+            await scoped_session.execute(
+                delete(BindingToken)
+                .where(BindingToken.expires_at <= now)
+                .execution_options(synchronize_session="fetch")
             )
-        else:
-            binding_token.token_hash = token_hash
-            binding_token.language_code = normalized_language
-            binding_token.created_at = now
-            binding_token.expires_at = expires_at
+            account = await scoped_session.get(UserAccount, aid)
+            if account is None:
+                raise AccountNotFoundError(f"aid {aid} does not exist")
 
-        await _finalize(scoped_session, owns_session)
-        return token
+            binding_token = await scoped_session.get(BindingToken, aid)
+            if binding_token is None:
+                scoped_session.add(
+                    BindingToken(
+                        aid=aid,
+                        token_hash=token_hash,
+                        language_code=normalized_language,
+                        expires_at=expires_at,
+                    )
+                )
+            else:
+                binding_token.token_hash = token_hash
+                binding_token.language_code = normalized_language
+                binding_token.created_at = now
+                binding_token.expires_at = expires_at
+
+            await _finalize(scoped_session, owns_session)
+            return token
+    except IntegrityError as exc:
+        raise BindingTokenCreateError(
+            f"failed to create binding token for aid {aid}; please retry"
+        ) from exc
 
 
 async def claim_binding_token(
@@ -599,6 +608,7 @@ __all__ = [
     "BindingConflictError",
     "BindingNotFoundError",
     "BindingTokenClaim",
+    "BindingTokenCreateError",
     "LocalesAccountError",
     "bind_account",
     "claim_binding_token",

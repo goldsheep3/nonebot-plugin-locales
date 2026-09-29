@@ -4,6 +4,7 @@ bind:
     指令格式：/bind
     bot 会生成一个绑定命令（/bind {token}），你需要在有效期内向目标平台的 bot 发送该命令完成绑定。
   token_created: "绑定令牌已生成：/bind {token}\n请在目标平台向机器人发送该命令完成绑定。令牌将在 {ttl_minutes} 分钟后失效。"
+  token_create_failed: "绑定令牌生成失败，可能有另一项签发操作正在进行，请重试。"
   token_invalid: "绑定令牌无效或已过期。"
   platform_conflict: "目标 AID 已绑定 {platform} 平台身份，请先解绑后再试。"
   success: "绑定完成，当前平台身份已绑定到 AID {aid}。"

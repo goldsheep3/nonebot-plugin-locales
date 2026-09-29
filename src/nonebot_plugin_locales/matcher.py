@@ -10,6 +10,7 @@ from nonebot.adapters import Bot, Event
 from .api import (
     BIND_TOKEN_TTL,
     BindingConflictError,
+    BindingTokenCreateError,
     get_aid,
     bind_account,
     find_user_id,
@@ -68,7 +69,10 @@ async def bind_handle(
     if not token_arg:
         aid = await get_aid(bot, event)
         language_code = await get_language(aid)
-        token = await create_binding_token(aid, language_code)
+        try:
+            token = await create_binding_token(aid, language_code)
+        except BindingTokenCreateError:
+            await bind_matcher.finish(await reply("bind.token_create_failed"))
         await bind_matcher.finish(
             await reply(
                 "bind.token_created",
