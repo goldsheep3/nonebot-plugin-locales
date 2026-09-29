@@ -3,28 +3,27 @@ from __future__ import annotations
 import re
 import hashlib
 import secrets
+from typing import Any, cast, overload
 from datetime import timedelta
-from dataclasses import dataclass
-from typing import overload, cast, Any
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from collections.abc import AsyncIterator
 
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.engine import CursorResult
 from nonebot.adapters import Bot, Event
+from sqlalchemy.engine import CursorResult
 from nonebot_plugin_datastore import create_session
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from .config import plugin_config
 from .models import (
-    AccountAuditLog,
-    BindingToken,
-    PlatformBinding,
     UserAccount,
+    BindingToken,
+    AccountAuditLog,
+    PlatformBinding,
     utc_now,
 )
-
 
 BIND_TOKEN_TTL = timedelta(minutes=10)
 _BIND_TOKEN_BYTES = 12
@@ -435,8 +434,8 @@ async def claim_binding_token(
                     BindingToken.expires_at > now,
                 )
                 .execution_options(synchronize_session="fetch")
-                )
-            )
+            ),
+        )
         if result.rowcount != 1:
             return None
 
@@ -519,9 +518,7 @@ async def bind_account(
 
                 old_aid = binding.aid
                 binding.aid = aid
-                await _set_account_language(
-                    scoped_session, aid, normalized_language
-                )
+                await _set_account_language(scoped_session, aid, normalized_language)
                 if binding.created_aid != aid:
                     await _set_account_language(
                         scoped_session,
@@ -597,8 +594,8 @@ async def unbind_account(
 
 
 __all__ = [
-    "AccountNotFoundError",
     "BIND_TOKEN_TTL",
+    "AccountNotFoundError",
     "BindingConflictError",
     "BindingNotFoundError",
     "BindingTokenClaim",

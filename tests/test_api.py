@@ -5,8 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from nonebot_plugin_locales.api import (
     BindingConflictError,
-    claim_binding_token,
-    create_binding_token,
     get_aid,
     get_user_id,
     bind_account,
@@ -16,11 +14,13 @@ from nonebot_plugin_locales.api import (
     set_language,
     unbind_account,
     get_bind_platform,
+    claim_binding_token,
+    create_binding_token,
 )
 from nonebot_plugin_locales.models import (
     UserAccount,
-    AccountAuditLog,
     BindingToken,
+    AccountAuditLog,
     PlatformBinding,
 )
 

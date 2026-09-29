@@ -34,21 +34,21 @@ from .api import (
     get_aid,
     get_user_id,
     bind_account,
-    claim_binding_token,
-    create_binding_token,
     find_user_id,
     get_bindings,
     get_language,
     set_language,
     unbind_account,
     get_bind_platform,
+    claim_binding_token,
+    create_binding_token,
     normalize_language_code,
 )
 from .locales import Reply, LocaleError, LocaleStore, LocaleFileError, locales_init
 
 __all__ = [
-    "AccountNotFoundError",
     "BIND_TOKEN_TTL",
+    "AccountNotFoundError",
     "BindingConflictError",
     "BindingNotFoundError",
     "BindingTokenClaim",

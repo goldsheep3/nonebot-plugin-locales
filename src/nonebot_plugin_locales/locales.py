@@ -70,9 +70,7 @@ class LocaleStore:
             try:
                 language_code = normalize_language_code(file.stem)
             except ValueError as e:
-                raise LocaleFileError(
-                    f"invalid locale file name {file.name}"
-                ) from e
+                raise LocaleFileError(f"invalid locale file name {file.name}") from e
             if language_code in self.languages:
                 raise LocaleFileError(
                     f"duplicate locale language code {language_code}: {file.name}"

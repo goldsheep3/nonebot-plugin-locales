@@ -12,13 +12,13 @@ from .api import (
     BindingConflictError,
     get_aid,
     bind_account,
-    claim_binding_token,
-    create_binding_token,
     find_user_id,
     get_bindings,
     get_language,
     set_language,
     unbind_account,
+    claim_binding_token,
+    create_binding_token,
     normalize_language_code,
 )
 from .locales import Reply, LocaleStore, create_reply, locales_init
@@ -26,6 +26,7 @@ from .locales import Reply, LocaleStore, create_reply, locales_init
 _LANG_DIR = Path(__file__).parent / "assets" / "lang"
 _LOCALE_STORE = LocaleStore(_LANG_DIR)
 _Reply = locales_init(store=_LOCALE_STORE)
+
 
 def _plain_arg(args: Any) -> str:
     if hasattr(args, "extract_plain_text"):
