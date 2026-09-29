@@ -1,5 +1,3 @@
-common:
-  invalid_identity: "参数格式无效，请使用 platform:user_id。"
 bind:
   help: |-
     将你的多平台绑定到一起。
@@ -11,9 +9,10 @@ bind:
   already_bound: "当前平台身份已经绑定到 AID {aid}。"
 unbind:
   restored: "解绑完成，当前平台身份已恢复到初始 AID {aid}。"
-  target_restored: "解绑完成，{target} 已恢复到初始 AID {aid}。"
+  platform_restored: "解绑完成，{platform} 平台身份已恢复到初始 AID {aid}。"
+  platform_not_bound: "当前 AID 未绑定 {platform} 平台身份。"
+  platform_already_origin: "{platform} 平台身份未绑定到其他 AID，当前 AID 为 {aid}。"
   already_origin: "当前平台身份未绑定到其他 AID。\n当前 AID {aid} 的绑定：{bindings}"
-  target_already_origin: "{target} 未绑定到其他 AID，当前 AID 为 {aid}。"
 language:
   help: |-
     设置当前语言。

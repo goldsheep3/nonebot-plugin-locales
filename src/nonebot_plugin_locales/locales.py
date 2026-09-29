@@ -102,8 +102,11 @@ class LocaleStore:
         return data
 
     def _load_yaml(self, file: Path) -> LocaleData:
-        with file.open("r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
+        try:
+            with file.open("r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+        except yaml.YAMLError as e:
+            raise LocaleFileError(f"failed to parse locale file {file}") from e
         if not isinstance(data, dict):
             raise LocaleFileError(f"{file} must contain a YAML mapping")
         return data
@@ -135,16 +138,22 @@ def create_reply(store: LocaleStore, language_code: str | None = None) -> Reply:
 
 
 def locales_init(
-    lang_dir: str | Path,
+    lang_dir: str | Path | None = None,
     *,
+    store: LocaleStore | None = None,
     default_language: str | None = None,
     fallback_language: str | None = None,
 ):
-    store = LocaleStore(
-        lang_dir,
-        default_language=default_language,
-        fallback_language=fallback_language,
-    )
+    if store is None:
+        if lang_dir is None:
+            raise ValueError("lang_dir is required when store is not provided")
+        store = LocaleStore(
+            lang_dir,
+            default_language=default_language,
+            fallback_language=fallback_language,
+        )
+    elif lang_dir is not None:
+        raise ValueError("lang_dir and store cannot be provided together")
 
     async def _dependency(bot: Bot, event: Event) -> Reply:
         language_code = await _resolve_event_language(

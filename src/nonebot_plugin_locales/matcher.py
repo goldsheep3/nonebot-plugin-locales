@@ -13,6 +13,7 @@ from nonebot.adapters import Bot, Event
 from .api import (
     get_aid,
     bind_account,
+    find_user_id,
     get_bindings,
     get_language,
     set_language,
@@ -24,7 +25,7 @@ _TOKEN_TTL_SECONDS = 600
 _TOKEN_BYTES = 12
 _LANG_DIR = Path(__file__).parent / "assets" / "lang"
 _LOCALE_STORE = LocaleStore(_LANG_DIR)
-_Reply = locales_init(_LANG_DIR)
+_Reply = locales_init(store=_LOCALE_STORE)
 
 
 @dataclass(slots=True)
@@ -49,7 +50,7 @@ def _current_identity(bot: Bot, event: Event) -> tuple[str, str]:
 
 
 def _cleanup_tokens(now: float | None = None) -> None:
-    current = now or time.monotonic()
+    current = time.monotonic() if now is None else now
     expired_tokens = [
         token
         for token, pending in _pending_tokens.items()
@@ -77,36 +78,18 @@ def _create_token(aid: int, language_code: str) -> str:
     return token
 
 
-def _take_token(token: str) -> _PendingBinding | None:
+def _get_token(token: str) -> _PendingBinding | None:
     _cleanup_tokens()
+    return _pending_tokens.get(token)
+
+
+def _take_token(token: str) -> _PendingBinding | None:
     pending = _pending_tokens.pop(token, None)
     if pending is None:
         return None
     if _aid_tokens.get(pending.aid) == token:
         _aid_tokens.pop(pending.aid, None)
     return pending
-
-
-def _parse_identity(raw: str) -> tuple[str, str] | None:
-    value = raw.strip()
-    if value.startswith("(") and value.endswith(")"):
-        value = value[1:-1].strip()
-
-    for separator in (":", ","):
-        if separator in value:
-            platform, user_id = value.split(separator, 1)
-            break
-    else:
-        parts = value.split(maxsplit=1)
-        if len(parts) != 2:
-            return None
-        platform, user_id = parts
-
-    platform = platform.strip().lower()
-    user_id = user_id.strip()
-    if not platform or not user_id:
-        return None
-    return platform, user_id
 
 
 def _format_bindings(bindings: dict[str, list[str]]) -> str:
@@ -152,7 +135,7 @@ async def bind_handle(
     if token_arg.lower() in ("help", "帮助"):
         await bind_matcher.finish(await reply("bind.help"))
 
-    pending = _take_token(token_arg)
+    pending = _get_token(token_arg)
     if pending is None:
         await bind_matcher.finish(await reply("bind.token_invalid"))
 
@@ -163,6 +146,7 @@ async def bind_handle(
         user_id,
         pending.language_code,
     )
+    _take_token(token_arg)
     if old_aid is None:
         await bind_matcher.finish(await reply("bind.already_bound", aid=pending.aid))
 
@@ -178,25 +162,32 @@ async def unbind_handle(
     args: Any = CommandArg(),
     reply: Reply = _Reply,
 ) -> None:
-    raw_arg = _plain_arg(args)
-    if raw_arg:
-        identity = _parse_identity(raw_arg)
-        if identity is None:
-            await unbind_matcher.finish(await reply("common.invalid_identity"))
-        platform, user_id = identity
-        old_aid = await get_aid(platform, user_id)
-        new_aid = await unbind_account(platform, user_id)
-        target = f"{platform}:{user_id}"
+    platform_arg = _plain_arg(args).lower()
+    old_aid = await get_aid(bot, event)
+    if platform_arg:
+        user_id = await find_user_id(old_aid, platform_arg)
+        if user_id is None:
+            await unbind_matcher.finish(
+                await reply("unbind.platform_not_bound", platform=platform_arg)
+            )
+        new_aid = await unbind_account(platform_arg, user_id)
         if old_aid == new_aid:
             await unbind_matcher.finish(
-                await reply("unbind.target_already_origin", target=target, aid=new_aid)
+                await reply(
+                    "unbind.platform_already_origin",
+                    platform=platform_arg,
+                    aid=new_aid,
+                )
             )
         await unbind_matcher.finish(
-            await reply("unbind.target_restored", target=target, aid=new_aid)
+            await reply(
+                "unbind.platform_restored",
+                platform=platform_arg,
+                aid=new_aid,
+            )
         )
 
     platform, user_id = _current_identity(bot, event)
-    old_aid = await get_aid(bot, event)
     new_aid = await unbind_account(platform, user_id)
     if old_aid != new_aid:
         await unbind_matcher.finish(await reply("unbind.restored", aid=new_aid))

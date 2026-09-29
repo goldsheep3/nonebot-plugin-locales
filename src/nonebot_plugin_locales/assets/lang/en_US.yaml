@@ -1,5 +1,3 @@
-common:
-  invalid_identity: "Invalid argument format. Use platform:user_id."
 bind:
   help: |-
     Link your multi-platform accounts together.
@@ -11,9 +9,10 @@ bind:
   already_bound: "This platform identity is already bound to AID {aid}."
 unbind:
   restored: "Unbound. This platform identity has been restored to its initial AID {aid}."
-  target_restored: "Unbound. {target} has been restored to its initial AID {aid}."
+  platform_restored: "Unbound. The {platform} identity has been restored to its initial AID {aid}."
+  platform_not_bound: "The current AID has no identity bound on {platform}."
+  platform_already_origin: "The {platform} identity is not bound to another AID. Current AID is {aid}."
   already_origin: "This platform identity is not bound to another AID.\nBindings of current AID {aid}: {bindings}"
-  target_already_origin: "{target} is not bound to another AID. Current AID is {aid}."
 language:
   help: |-
     Set the current language.

@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from nonebot_plugin_locales.api import (
     get_aid,
     bind_account,
+    find_user_id,
     get_bindings,
     get_language,
     set_language,
@@ -96,6 +97,23 @@ async def test_set_language_updates_current_and_created_accounts(
 
     assert await get_language(owner_aid, session=db_session) == "ja_JP"
     assert await get_language(member_origin_aid, session=db_session) == "ja_JP"
+
+
+async def test_find_user_id_returns_none_for_unbound_platform(
+    db_session: AsyncSession,
+) -> None:
+    aid = await get_aid("onebot", "owner", session=db_session)
+
+    assert await find_user_id(aid, "telegram", session=db_session) is None
+
+
+async def test_find_user_id_returns_bound_identity(
+    db_session: AsyncSession,
+) -> None:
+    aid = await get_aid("onebot", "owner", session=db_session)
+    await bind_account(aid, "telegram", "member", "zh_CN", session=db_session)
+
+    assert await find_user_id(aid, "Telegram", session=db_session) == "member"
 
 
 async def test_unbind_account_creates_missing_identity(

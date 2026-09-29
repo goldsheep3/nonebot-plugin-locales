@@ -27,11 +27,11 @@ from . import matcher as matcher
 from .api import (
     LocalesAccountError,
     AccountNotFoundError,
-    BindingConflictError,
     BindingNotFoundError,
     get_aid,
     get_user_id,
     bind_account,
+    find_user_id,
     get_bindings,
     get_language,
     set_language,
@@ -42,7 +42,6 @@ from .locales import Reply, LocaleError, LocaleStore, LocaleFileError, locales_i
 
 __all__ = [
     "AccountNotFoundError",
-    "BindingConflictError",
     "BindingNotFoundError",
     "LocaleError",
     "LocaleFileError",
@@ -50,6 +49,7 @@ __all__ = [
     "LocalesAccountError",
     "Reply",
     "bind_account",
+    "find_user_id",
     "get_aid",
     "get_bind_platform",
     "get_bindings",

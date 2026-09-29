@@ -26,10 +26,6 @@ class BindingNotFoundError(LocalesAccountError):
     """平台身份绑定不存在。"""
 
 
-class BindingConflictError(LocalesAccountError):
-    """平台身份绑定冲突。"""
-
-
 @asynccontextmanager
 async def _session_scope(
     session: AsyncSession | None = None,
@@ -212,12 +208,12 @@ async def get_aid(  # type: ignore[override]
             return binding.aid
 
 
-async def get_user_id(
+async def find_user_id(
     aid: int,
     platform: str,
     *,
     session: AsyncSession | None = None,
-) -> str:
+) -> str | None:
     normalized_platform = _normalize_platform(platform)
 
     async with _session_scope(session) as (scoped_session, _):
@@ -230,12 +226,20 @@ async def get_user_id(
             .order_by(PlatformBinding.id)
             .limit(1)
         )
-        user_id = result.scalar_one_or_none()
-        if user_id is None:
-            raise BindingNotFoundError(
-                f"aid {aid} has no binding on {normalized_platform}"
-            )
-        return user_id
+        return result.scalar_one_or_none()
+
+
+async def get_user_id(
+    aid: int,
+    platform: str,
+    *,
+    session: AsyncSession | None = None,
+) -> str:
+    normalized_platform = _normalize_platform(platform)
+    user_id = await find_user_id(aid, normalized_platform, session=session)
+    if user_id is None:
+        raise BindingNotFoundError(f"aid {aid} has no binding on {normalized_platform}")
+    return user_id
 
 
 async def get_bindings(
@@ -391,10 +395,10 @@ async def unbind_account(
 
 __all__ = [
     "AccountNotFoundError",
-    "BindingConflictError",
     "BindingNotFoundError",
     "LocalesAccountError",
     "bind_account",
+    "find_user_id",
     "get_aid",
     "get_bind_platform",
     "get_bindings",

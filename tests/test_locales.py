@@ -89,6 +89,15 @@ message:
     assert store.render("message.hello", name="青羽") == "你好，青羽，来自 {platform}"
 
 
+def test_locale_store_wraps_invalid_yaml(tmp_path: Path) -> None:
+    _write_language(tmp_path, "zh_CN", "message: [unterminated")
+
+    with pytest.raises(LocaleFileError) as exc_info:
+        LocaleStore(tmp_path, default_language="zh_CN")
+
+    assert exc_info.value.__cause__ is not None
+
+
 def test_locale_store_rejects_non_mapping_yaml(tmp_path: Path) -> None:
     _write_language(
         tmp_path,
@@ -100,6 +109,26 @@ def test_locale_store_rejects_non_mapping_yaml(tmp_path: Path) -> None:
 
     with pytest.raises(LocaleFileError):
         LocaleStore(tmp_path, default_language="zh_CN")
+
+
+def test_locales_init_accepts_existing_store(tmp_path: Path) -> None:
+    from nonebot_plugin_locales.locales import locales_init
+
+    _write_language(tmp_path, "zh_CN", "message: {ok: 完成}")
+    store = LocaleStore(tmp_path, default_language="zh_CN")
+
+    dependency = locales_init(store=store)
+
+    assert dependency is not None
+
+
+def test_locales_init_rejects_ambiguous_source(tmp_path: Path) -> None:
+    from nonebot_plugin_locales.locales import locales_init
+
+    store = LocaleStore(tmp_path, default_language="zh_CN")
+
+    with pytest.raises(ValueError, match="cannot be provided together"):
+        locales_init(tmp_path, store=store)
 
 
 async def test_create_reply_returns_async_renderer(tmp_path: Path) -> None:

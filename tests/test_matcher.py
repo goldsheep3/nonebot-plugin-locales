@@ -9,26 +9,6 @@ def _reset_token_cache() -> None:
     matcher._aid_tokens.clear()
 
 
-@pytest.mark.parametrize(
-    ("raw", "expected"),
-    [
-        ("onebot:123", ("onebot", "123")),
-        ("(Discord, abc)", ("discord", "abc")),
-        ("Telegram 456", ("telegram", "456")),
-    ],
-)
-def test_parse_identity_accepts_supported_formats(
-    raw: str,
-    expected: tuple[str, str],
-) -> None:
-    assert matcher._parse_identity(raw) == expected
-
-
-@pytest.mark.parametrize("raw", ["", "onebot", ":", "onebot:", ":123"])
-def test_parse_identity_rejects_invalid_values(raw: str) -> None:
-    assert matcher._parse_identity(raw) is None
-
-
 def test_format_bindings_sorts_platforms_and_keeps_user_order() -> None:
     bindings = {
         "telegram": ["b", "a"],
@@ -55,6 +35,37 @@ def test_create_token_replaces_previous_token_for_same_aid(
     assert pending.aid == 10
     assert pending.language_code == "en_US"
     assert matcher._take_token(new_token) is None
+
+
+def test_get_token_does_not_consume_token() -> None:
+    matcher._pending_tokens["token"] = matcher._PendingBinding(
+        aid=1,
+        language_code="zh_CN",
+        created_at=matcher.time.monotonic(),
+    )
+    matcher._aid_tokens[1] = "token"
+
+    pending = matcher._get_token("token")
+
+    assert pending is matcher._pending_tokens["token"]
+    assert matcher._take_token("token") is pending
+    assert matcher._get_token("token") is None
+
+
+def test_cleanup_tokens_honors_zero_timestamp(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    matcher._pending_tokens["future"] = matcher._PendingBinding(
+        aid=1,
+        language_code="zh_CN",
+        created_at=1.0,
+    )
+    matcher._aid_tokens[1] = "future"
+    monkeypatch.setattr(matcher.time, "monotonic", lambda: 10_000.0)
+
+    matcher._cleanup_tokens(now=0.0)
+
+    assert "future" in matcher._pending_tokens
 
 
 def test_cleanup_tokens_removes_expired_entries() -> None:
