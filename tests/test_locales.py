@@ -151,6 +151,34 @@ message:
     assert store.render("message.nested") == "message.nested"
 
 
+def test_locale_store_randomly_renders_string_list(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_language(
+        tmp_path,
+        "zh_CN",
+        """
+message:
+  choices:
+    - "第一条：{name}"
+    - "第二条：{name}"
+  empty: []
+  mixed:
+    - "文本"
+    - 1
+""",
+    )
+    monkeypatch.setattr(
+        "nonebot_plugin_locales.locales.random.choice",
+        lambda values: values[1],
+    )
+    store = LocaleStore(tmp_path, default_language="zh_CN")
+
+    assert store.render("message.choices", name="青羽") == "第二条：青羽"
+    assert store.render("message.empty") == "message.empty"
+    assert store.render("message.mixed") == "message.mixed"
+
+
 def test_locale_store_keeps_missing_format_arguments(tmp_path: Path) -> None:
     _write_language(
         tmp_path,

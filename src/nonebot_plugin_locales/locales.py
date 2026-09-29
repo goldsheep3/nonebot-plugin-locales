@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import random
 from typing import Any, TypeAlias
 from pathlib import Path
 from collections.abc import Mapping, Callable, Awaitable
@@ -95,6 +96,12 @@ class LocaleStore:
                 continue
             if isinstance(value, str):
                 return self._format(value, kwargs)
+            if (
+                isinstance(value, list)
+                and value
+                and all(isinstance(item, str) for item in value)
+            ):
+                return self._format(random.choice(value), kwargs)
             return normalized_key
 
         return normalized_key
