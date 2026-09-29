@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-import time
-import secrets
 from typing import Any
 from pathlib import Path
-from dataclasses import dataclass
 
 from nonebot import on_command
 from nonebot.params import CommandArg
 from nonebot.adapters import Bot, Event
 
 from .api import (
+    BIND_TOKEN_TTL,
     BindingConflictError,
     get_aid,
     bind_account,
+    claim_binding_token,
+    create_binding_token,
     find_user_id,
     get_bindings,
     get_language,
@@ -23,23 +23,9 @@ from .api import (
 )
 from .locales import Reply, LocaleStore, create_reply, locales_init
 
-_TOKEN_TTL_SECONDS = 600
-_TOKEN_BYTES = 12
 _LANG_DIR = Path(__file__).parent / "assets" / "lang"
 _LOCALE_STORE = LocaleStore(_LANG_DIR)
 _Reply = locales_init(store=_LOCALE_STORE)
-
-
-@dataclass(slots=True)
-class _PendingBinding:
-    aid: int
-    language_code: str
-    created_at: float
-
-
-_pending_tokens: dict[str, _PendingBinding] = {}
-_aid_tokens: dict[int, str] = {}
-
 
 def _plain_arg(args: Any) -> str:
     if hasattr(args, "extract_plain_text"):
@@ -49,45 +35,6 @@ def _plain_arg(args: Any) -> str:
 
 def _current_identity(bot: Bot, event: Event) -> tuple[str, str]:
     return bot.adapter.get_name().strip().lower(), event.get_user_id().strip()
-
-
-def _cleanup_tokens(now: float | None = None) -> None:
-    current = time.monotonic() if now is None else now
-    expired_tokens = [
-        token
-        for token, pending in _pending_tokens.items()
-        if current - pending.created_at > _TOKEN_TTL_SECONDS
-    ]
-    for token in expired_tokens:
-        pending = _pending_tokens.pop(token, None)
-        if pending is not None and _aid_tokens.get(pending.aid) == token:
-            _aid_tokens.pop(pending.aid, None)
-
-
-def _create_token(aid: int, language_code: str) -> str:
-    _cleanup_tokens()
-    old_token = _aid_tokens.pop(aid, None)
-    if old_token is not None:
-        _pending_tokens.pop(old_token, None)
-
-    token = secrets.token_urlsafe(_TOKEN_BYTES)
-    _pending_tokens[token] = _PendingBinding(
-        aid=aid,
-        language_code=language_code,
-        created_at=time.monotonic(),
-    )
-    _aid_tokens[aid] = token
-    return token
-
-
-def _take_token(token: str) -> _PendingBinding | None:
-    _cleanup_tokens()
-    pending = _pending_tokens.pop(token, None)
-    if pending is None:
-        return None
-    if _aid_tokens.get(pending.aid) == token:
-        _aid_tokens.pop(pending.aid, None)
-    return pending
 
 
 def _format_bindings(bindings: dict[str, list[str]]) -> str:
@@ -120,22 +67,20 @@ async def bind_handle(
     if not token_arg:
         aid = await get_aid(bot, event)
         language_code = await get_language(aid)
-        token = _create_token(aid, language_code)
+        token = await create_binding_token(aid, language_code)
         await bind_matcher.finish(
             await reply(
                 "bind.token_created",
                 aid=aid,
                 token=token,
-                ttl_minutes=_TOKEN_TTL_SECONDS // 60,
+                ttl_minutes=int(BIND_TOKEN_TTL.total_seconds() // 60),
             )
         )
 
     if token_arg.lower() in ("help", "帮助"):
         await bind_matcher.finish(await reply("bind.help"))
 
-    # Claim the token before awaiting database work so only one concurrent
-    # handler can use it. Binding failures intentionally do not restore it.
-    pending = _take_token(token_arg)
+    pending = await claim_binding_token(token_arg)
     if pending is None:
         await bind_matcher.finish(await reply("bind.token_invalid"))
 

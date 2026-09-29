@@ -79,6 +79,35 @@ class PlatformBinding(Model):
     )
 
 
+class BindingToken(Model):
+    """The single active cross-platform binding token for an account."""
+
+    __tablename__ = "locales_binding_token"
+
+    aid: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("locales_user_account.aid"),
+        primary_key=True,
+    )
+    token_hash: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    language_code: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utc_now,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+
+
 class AccountAuditLog(Model):
     __tablename__ = "locales_account_audit_log"
 
@@ -105,6 +134,7 @@ class AccountAuditLog(Model):
 
 __all__ = [
     "AccountAuditLog",
+    "BindingToken",
     "PlatformBinding",
     "UserAccount",
 ]

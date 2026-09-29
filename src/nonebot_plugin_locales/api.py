@@ -1,18 +1,38 @@
 from __future__ import annotations
 
 import re
+import hashlib
+import secrets
+from datetime import timedelta
+from dataclasses import dataclass
 from typing import overload
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from nonebot.adapters import Bot, Event
 from nonebot_plugin_datastore import create_session
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from .config import plugin_config
-from .models import UserAccount, AccountAuditLog, PlatformBinding
+from .models import (
+    AccountAuditLog,
+    BindingToken,
+    PlatformBinding,
+    UserAccount,
+    utc_now,
+)
+
+
+BIND_TOKEN_TTL = timedelta(minutes=10)
+_BIND_TOKEN_BYTES = 12
+
+
+@dataclass(frozen=True, slots=True)
+class BindingTokenClaim:
+    aid: int
+    language_code: str
 
 
 class LocalesAccountError(ValueError):
@@ -101,6 +121,10 @@ def normalize_language_code(language_code: str) -> str:
 
 
 _normalize_language = normalize_language_code
+
+
+def _hash_binding_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def _extract_identity(
@@ -331,6 +355,95 @@ async def get_language(
         return account.language_code
 
 
+async def create_binding_token(
+    aid: int,
+    language_code: str,
+    *,
+    session: AsyncSession | None = None,
+) -> str:
+    """Create an account's only active binding token.
+
+    The database stores a digest rather than the token value. Issuing a new
+    token replaces the previous one for the same AID.
+    """
+    normalized_language = normalize_language_code(language_code)
+    token = secrets.token_urlsafe(_BIND_TOKEN_BYTES)
+    token_hash = _hash_binding_token(token)
+    now = utc_now()
+    expires_at = now + BIND_TOKEN_TTL
+
+    async with _session_scope(session) as (scoped_session, owns_session):
+        await scoped_session.execute(
+            delete(BindingToken)
+            .where(BindingToken.expires_at <= now)
+            .execution_options(synchronize_session="fetch")
+        )
+        account = await scoped_session.get(UserAccount, aid)
+        if account is None:
+            raise AccountNotFoundError(f"aid {aid} does not exist")
+
+        binding_token = await scoped_session.get(BindingToken, aid)
+        if binding_token is None:
+            scoped_session.add(
+                BindingToken(
+                    aid=aid,
+                    token_hash=token_hash,
+                    language_code=normalized_language,
+                    expires_at=expires_at,
+                )
+            )
+        else:
+            binding_token.token_hash = token_hash
+            binding_token.language_code = normalized_language
+            binding_token.created_at = now
+            binding_token.expires_at = expires_at
+
+        await _finalize(scoped_session, owns_session)
+        return token
+
+
+async def claim_binding_token(
+    token: str,
+    *,
+    session: AsyncSession | None = None,
+) -> BindingTokenClaim | None:
+    """Atomically consume a valid token and return its binding data."""
+    normalized_token = token.strip()
+    if not normalized_token:
+        return None
+
+    token_hash = _hash_binding_token(normalized_token)
+    now = utc_now()
+    async with _session_scope(session) as (scoped_session, owns_session):
+        binding_token = await scoped_session.scalar(
+            select(BindingToken).where(BindingToken.token_hash == token_hash)
+        )
+        if binding_token is None:
+            return None
+
+        aid = binding_token.aid
+        language_code = binding_token.language_code
+
+        result = await scoped_session.execute(
+            delete(BindingToken)
+            .where(
+                BindingToken.aid == aid,
+                BindingToken.token_hash == token_hash,
+                BindingToken.expires_at > now,
+            )
+            .execution_options(synchronize_session="fetch")
+        )
+        if result.rowcount != 1:
+            return None
+
+        claim = BindingTokenClaim(
+            aid=aid,
+            language_code=language_code,
+        )
+        await _finalize(scoped_session, owns_session)
+        return claim
+
+
 async def set_language(
     platform: str,
     user_id: str,
@@ -481,10 +594,14 @@ async def unbind_account(
 
 __all__ = [
     "AccountNotFoundError",
+    "BIND_TOKEN_TTL",
     "BindingConflictError",
     "BindingNotFoundError",
+    "BindingTokenClaim",
     "LocalesAccountError",
     "bind_account",
+    "claim_binding_token",
+    "create_binding_token",
     "find_user_id",
     "get_aid",
     "get_bind_platform",

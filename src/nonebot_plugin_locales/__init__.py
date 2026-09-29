@@ -25,6 +25,8 @@ __plugin_meta__ = PluginMetadata(  # type: ignore
 
 from . import matcher as matcher
 from .api import (
+    BIND_TOKEN_TTL,
+    BindingTokenClaim,
     LocalesAccountError,
     AccountNotFoundError,
     BindingConflictError,
@@ -32,6 +34,8 @@ from .api import (
     get_aid,
     get_user_id,
     bind_account,
+    claim_binding_token,
+    create_binding_token,
     find_user_id,
     get_bindings,
     get_language,
@@ -44,14 +48,18 @@ from .locales import Reply, LocaleError, LocaleStore, LocaleFileError, locales_i
 
 __all__ = [
     "AccountNotFoundError",
+    "BIND_TOKEN_TTL",
     "BindingConflictError",
     "BindingNotFoundError",
+    "BindingTokenClaim",
     "LocaleError",
     "LocaleFileError",
     "LocaleStore",
     "LocalesAccountError",
     "Reply",
     "bind_account",
+    "claim_binding_token",
+    "create_binding_token",
     "find_user_id",
     "get_aid",
     "get_bind_platform",

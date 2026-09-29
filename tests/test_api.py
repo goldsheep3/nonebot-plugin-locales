@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from nonebot_plugin_locales.api import (
     BindingConflictError,
+    claim_binding_token,
+    create_binding_token,
     get_aid,
     get_user_id,
     bind_account,
@@ -18,6 +20,7 @@ from nonebot_plugin_locales.api import (
 from nonebot_plugin_locales.models import (
     UserAccount,
     AccountAuditLog,
+    BindingToken,
     PlatformBinding,
 )
 
@@ -53,6 +56,40 @@ async def test_get_aid_creates_account_and_origin_binding(
     assert binding.user_id == "123"
     assert binding.aid == aid
     assert binding.created_aid == aid
+
+
+async def test_binding_token_is_hashed_and_can_only_be_claimed_once(
+    db_session: AsyncSession,
+) -> None:
+    aid = await get_aid("onebot", "owner", session=db_session)
+    token = await create_binding_token(aid, "en-us", session=db_session)
+    stored_token = await db_session.get(BindingToken, aid)
+
+    assert stored_token is not None
+    assert stored_token.token_hash != token
+    assert stored_token.language_code == "en_US"
+
+    claim = await claim_binding_token(token, session=db_session)
+
+    assert claim is not None
+    assert claim.aid == aid
+    assert claim.language_code == "en_US"
+    assert await db_session.get(BindingToken, aid) is None
+    assert await claim_binding_token(token, session=db_session) is None
+
+
+async def test_new_binding_token_replaces_previous_token(
+    db_session: AsyncSession,
+) -> None:
+    aid = await get_aid("onebot", "owner", session=db_session)
+    old_token = await create_binding_token(aid, "zh_CN", session=db_session)
+    new_token = await create_binding_token(aid, "en_US", session=db_session)
+
+    assert old_token != new_token
+    assert await claim_binding_token(old_token, session=db_session) is None
+    claim = await claim_binding_token(new_token, session=db_session)
+    assert claim is not None
+    assert claim.language_code == "en_US"
 
 
 async def test_bind_account_records_log_and_unbind_restores_origin(
