@@ -155,7 +155,7 @@ def create_reply(store: LocaleStore, language_code: str | None = None) -> Reply:
     return reply
 
 
-def locales_init(
+def locales_initialization(
     lang_dir: str | Path | None = None,
     *,
     store: LocaleStore | None = None,
@@ -184,12 +184,17 @@ def locales_init(
     return Depends(_dependency)
 
 
+def locales_init(lang_dir: str | Path | None = None, **kwargs):
+    return locales_initialization(lang_dir=lang_dir, **kwargs)
+
+
 __all__ = [
     "LocaleError",
     "LocaleFileError",
     "LocaleStore",
     "Reply",
     "create_reply",
+    "locales_initialization",
     "locales_init",
     "normalize_language_code",
 ]

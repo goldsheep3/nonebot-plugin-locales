@@ -22,11 +22,11 @@ from .api import (
     create_binding_token,
     normalize_language_code,
 )
-from .locales import Reply, LocaleStore, create_reply, locales_init
+from .locales import Reply, LocaleStore, create_reply, locales_initialization
 
 _LANG_DIR = Path(__file__).parent / "assets" / "lang"
 _LOCALE_STORE = LocaleStore(_LANG_DIR)
-_Reply = locales_init(store=_LOCALE_STORE)
+_Reply = locales_initialization(store=_LOCALE_STORE)
 
 
 def _plain_arg(args: Any) -> str:

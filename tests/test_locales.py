@@ -189,23 +189,23 @@ def test_locale_store_rejects_non_mapping_yaml(tmp_path: Path) -> None:
 
 
 def test_locales_init_accepts_existing_store(tmp_path: Path) -> None:
-    from nonebot_plugin_locales.locales import locales_init
+    from nonebot_plugin_locales.locales import locales_initialization
 
     _write_language(tmp_path, "zh_CN", "message: {ok: 完成}")
     store = LocaleStore(tmp_path, default_language="zh_CN")
 
-    dependency = locales_init(store=store)
+    dependency = locales_initialization(store=store)
 
     assert dependency is not None
 
 
 def test_locales_init_rejects_ambiguous_source(tmp_path: Path) -> None:
-    from nonebot_plugin_locales.locales import locales_init
+    from nonebot_plugin_locales.locales import locales_initialization
 
     store = LocaleStore(tmp_path, default_language="zh_CN")
 
     with pytest.raises(ValueError, match="cannot be provided together"):
-        locales_init(tmp_path, store=store)
+        locales_initialization(tmp_path, store=store)
 
 
 def test_locale_store_format_returns_template_on_invalid_format(
