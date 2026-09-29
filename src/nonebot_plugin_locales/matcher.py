@@ -19,6 +19,7 @@ from .api import (
     get_language,
     set_language,
     unbind_account,
+    normalize_language_code,
 )
 from .locales import Reply, LocaleStore, create_reply, locales_init
 
@@ -236,6 +237,17 @@ async def language_handle(
     if language_code.lower() in ("help", "帮助"):
         await language_matcher.finish(
             await reply("language.help", available=", ".join(_available_languages()))
+        )
+
+    try:
+        language_code = normalize_language_code(language_code)
+    except ValueError:
+        await language_matcher.finish(
+            await reply(
+                "language.unsupported",
+                language=language_code,
+                available=", ".join(languages),
+            )
         )
 
     if language_code not in languages:

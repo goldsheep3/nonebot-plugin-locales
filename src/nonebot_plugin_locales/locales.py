@@ -8,7 +8,12 @@ import yaml
 from nonebot.params import Depends
 from nonebot.adapters import Bot, Event
 
-from .api import LocalesAccountError, get_aid, get_language
+from .api import (
+    LocalesAccountError,
+    get_aid,
+    get_language,
+    normalize_language_code,
+)
 from .config import plugin_config
 
 LocaleData = dict[str, Any]
@@ -41,8 +46,14 @@ class LocaleStore:
         fallback_language: str | None = None,
     ) -> None:
         self.lang_dir = Path(lang_dir)
-        self.default_language = default_language or plugin_config.locales_default_lang
-        self.fallback_language = fallback_language
+        self.default_language = normalize_language_code(
+            default_language or plugin_config.locales_default_lang
+        )
+        self.fallback_language = (
+            normalize_language_code(fallback_language)
+            if fallback_language is not None
+            else None
+        )
         self.languages: dict[str, LocaleData] = {}
         self.reload()
 
@@ -79,11 +90,11 @@ class LocaleStore:
         return normalized_key
 
     def has_language(self, language_code: str) -> bool:
-        return language_code in self.languages
+        return normalize_language_code(language_code) in self.languages
 
     def _language_chain(self, language_code: str | None) -> tuple[str, ...]:
         languages = (
-            language_code,
+            normalize_language_code(language_code) if language_code else None,
             self.fallback_language,
             self.default_language,
         )
@@ -173,4 +184,5 @@ __all__ = [
     "Reply",
     "create_reply",
     "locales_init",
+    "normalize_language_code",
 ]

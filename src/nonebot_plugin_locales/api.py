@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import overload
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
@@ -34,8 +35,23 @@ class BindingConflictError(LocalesAccountError):
 async def _session_scope(
     session: AsyncSession | None = None,
 ) -> AsyncIterator[tuple[AsyncSession, bool]]:
+    """Provide a session and rollback on every failed operation.
+
+    An injected session is still owned by the caller for commit purposes, but
+    it is rolled back here after an exception so it remains usable.
+    """
     if session is not None:
-        yield session, False
+        # Do not roll back the caller's whole transaction: previous API calls
+        # may have intentionally flushed changes into the same session. A
+        # nested transaction isolates this operation as a SAVEPOINT.
+        nested = await session.begin_nested()
+        try:
+            yield session, False
+        except Exception:
+            await nested.rollback()
+            raise
+        else:
+            await nested.commit()
         return
 
     async with create_session() as scoped_session:
@@ -68,11 +84,23 @@ def _normalize_identity(platform: str, user_id: str) -> tuple[str, str]:
     return normalized_platform, normalized_user_id
 
 
-def _normalize_language(language_code: str) -> str:
+def normalize_language_code(language_code: str) -> str:
+    """Normalize locale spellings such as ``en-us`` to ``en_US``."""
     normalized_language = language_code.strip()
     if not normalized_language:
         raise ValueError("language_code cannot be empty")
-    return normalized_language
+
+    parts = [part for part in re.split(r"[-_]", normalized_language) if part]
+    if not parts:
+        raise ValueError("language_code cannot be empty")
+    if len(parts) == 1:
+        return parts[0].lower()
+    return "_".join(
+        [parts[0].lower(), parts[1].upper(), *(part.lower() for part in parts[2:])]
+    )
+
+
+_normalize_language = normalize_language_code
 
 
 def _extract_identity(
@@ -125,7 +153,9 @@ async def _create_account(
     language_code: str | None = None,
 ) -> UserAccount:
     account = UserAccount(
-        language_code=language_code or plugin_config.locales_default_lang,
+        language_code=normalize_language_code(
+            language_code or plugin_config.locales_default_lang
+        ),
         primary_platform=platform,
     )
     session.add(account)
@@ -309,7 +339,7 @@ async def set_language(
     session: AsyncSession | None = None,
 ) -> None:
     normalized_platform, normalized_user_id = _normalize_identity(platform, user_id)
-    normalized_language = _normalize_language(language_code)
+    normalized_language = normalize_language_code(language_code)
 
     async with _session_scope(session) as (scoped_session, owns_session):
         binding = await _get_or_create_binding(
@@ -337,63 +367,73 @@ async def bind_account(
     session: AsyncSession | None = None,
 ) -> int | None:
     normalized_platform, normalized_user_id = _normalize_identity(platform, user_id)
-    normalized_language = _normalize_language(language_code)
+    normalized_language = normalize_language_code(language_code)
 
     async with _session_scope(session) as (scoped_session, owns_session):
-        target_account = await scoped_session.get(UserAccount, aid)
-        if target_account is None:
-            raise AccountNotFoundError(f"aid {aid} does not exist")
+        for attempt in range(2):
+            try:
+                target_account = await scoped_session.get(UserAccount, aid)
+                if target_account is None:
+                    raise AccountNotFoundError(f"aid {aid} does not exist")
 
-        binding = await _get_binding(
-            scoped_session,
-            normalized_platform,
-            normalized_user_id,
-        )
-        existing_binding = await _get_account_platform_binding(
-            scoped_session,
-            aid,
-            normalized_platform,
-        )
-        if existing_binding is not None and (
-            binding is None or existing_binding.id != binding.id
-        ):
-            raise BindingConflictError(
-                f"aid {aid} already has a binding on {normalized_platform}"
-            )
-        if binding is None:
-            binding = await _create_identity(
-                scoped_session,
-                normalized_platform,
-                normalized_user_id,
-                normalized_language,
-            )
-
-        old_aid = binding.aid
-        binding.aid = aid
-
-        await _set_account_language(scoped_session, aid, normalized_language)
-        if binding.created_aid != aid:
-            await _set_account_language(
-                scoped_session,
-                binding.created_aid,
-                normalized_language,
-            )
-
-        if old_aid != aid:
-            scoped_session.add(
-                AccountAuditLog(
-                    operation="bind",
-                    platform=normalized_platform,
-                    user_id=normalized_user_id,
-                    old_aid=old_aid,
-                    new_aid=aid,
+                binding = await _get_binding(
+                    scoped_session,
+                    normalized_platform,
+                    normalized_user_id,
                 )
-            )
-            await _finalize(scoped_session, owns_session)
-            return old_aid
+                existing_binding = await _get_account_platform_binding(
+                    scoped_session,
+                    aid,
+                    normalized_platform,
+                )
+                if existing_binding is not None and (
+                    binding is None or existing_binding.id != binding.id
+                ):
+                    raise BindingConflictError(
+                        f"aid {aid} already has a binding on {normalized_platform}"
+                    )
+                if binding is None:
+                    binding = await _create_identity(
+                        scoped_session,
+                        normalized_platform,
+                        normalized_user_id,
+                        normalized_language,
+                    )
 
-        await _finalize(scoped_session, owns_session)
-        return None
+                old_aid = binding.aid
+                binding.aid = aid
+                await _set_account_language(
+                    scoped_session, aid, normalized_language
+                )
+                if binding.created_aid != aid:
+                    await _set_account_language(
+                        scoped_session,
+                        binding.created_aid,
+                        normalized_language,
+                    )
+
+                if old_aid != aid:
+                    scoped_session.add(
+                        AccountAuditLog(
+                            operation="bind",
+                            platform=normalized_platform,
+                            user_id=normalized_user_id,
+                            old_aid=old_aid,
+                            new_aid=aid,
+                        )
+                    )
+                    await _finalize(scoped_session, owns_session)
+                    return old_aid
+
+                await _finalize(scoped_session, owns_session)
+                return None
+            except IntegrityError as exc:
+                # A unique constraint can be lost only after another
+                # transaction wins the race. Convert it to the public domain
+                # error; the session scope rolls back the SAVEPOINT.
+                raise BindingConflictError(
+                    f"binding conflicts on {normalized_platform}:{normalized_user_id}"
+                ) from exc
 
 
 async def unbind_account(
@@ -451,6 +491,7 @@ __all__ = [
     "get_bindings",
     "get_language",
     "get_user_id",
+    "normalize_language_code",
     "set_language",
     "unbind_account",
 ]

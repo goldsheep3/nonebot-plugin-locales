@@ -22,6 +22,14 @@ from nonebot_plugin_locales.models import (
 )
 
 
+def test_normalize_language_code_accepts_common_spellings() -> None:
+    from nonebot_plugin_locales.api import normalize_language_code
+
+    assert normalize_language_code(" en-us ") == "en_US"
+    assert normalize_language_code("ZH_cn") == "zh_CN"
+    assert normalize_language_code("ja") == "ja"
+
+
 def test_extract_identity_rejects_mixed_argument_types() -> None:
     from nonebot_plugin_locales.api import _extract_identity
 
@@ -227,6 +235,16 @@ async def test_public_api_validates_empty_values(db_session: AsyncSession) -> No
         await get_aid("onebot", " ", session=db_session)
     with pytest.raises(ValueError, match="language_code cannot be empty"):
         await set_language("onebot", "user", " ", session=db_session)
+
+
+async def test_session_is_rolled_back_after_api_error(
+    db_session: AsyncSession,
+) -> None:
+    with pytest.raises(ValueError, match="user_id cannot be empty"):
+        await get_aid("onebot", " ", session=db_session)
+
+    aid = await get_aid("onebot", "usable-after-error", session=db_session)
+    assert aid > 0
 
 
 async def test_public_api_raises_for_missing_account(

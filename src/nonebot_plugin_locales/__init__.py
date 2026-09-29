@@ -38,6 +38,7 @@ from .api import (
     set_language,
     unbind_account,
     get_bind_platform,
+    normalize_language_code,
 )
 from .locales import Reply, LocaleError, LocaleStore, LocaleFileError, locales_init
 
@@ -59,6 +60,7 @@ __all__ = [
     "get_user_id",
     "locales_init",
     "matcher",
+    "normalize_language_code",
     "set_language",
     "unbind_account",
 ]
