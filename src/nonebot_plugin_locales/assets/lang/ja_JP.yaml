@@ -1,0 +1,25 @@
+bind:
+  help: |-
+    複数のプラットフォームをまとめてバインドします。
+    コマンド形式：/bind
+    bot がバインドコマンド（/bind {token}）を生成します。有効期限内に対象プラットフォームの bot にそのコマンドを送信してバインドを完了してください。
+  token_created: "バインドトークンを生成しました：/bind {token}\n対象プラットフォームでボットにこのコマンドを送信してバインドを完了してください。トークンは {ttl_minutes} 分後に失効します。"
+  token_create_failed: "バインドトークンの生成に失敗しました。別の発行処理が進行中の可能性があります。もう一度お試しください。"
+  token_invalid: "バインドトークンが無効または期限切れです。"
+  platform_conflict: "対象の AID はすでに {platform} プラットフォームの身元にバインドされています。先に解除してから再試行してください。"
+  success: "バインド完了。現在のプラットフォーム身元は AID {aid} にバインドされました。"
+  already_bound: "現在のプラットフォーム身元はすでに AID {aid} にバインドされています。"
+unbind:
+  restored: "バインド解除完了。現在のプラットフォーム身元は初期 AID {aid} に復元されました。"
+  platform_restored: "バインド解除完了。{platform} プラットフォーム身元は初期 AID {aid} に復元されました。"
+  platform_not_bound: "現在の AID は {platform} プラットフォーム身元にバインドされていません。"
+  platform_already_origin: "{platform} プラットフォーム身元は他の AID にバインドされていません。現在の AID は {aid} です。"
+  already_origin: "現在のプラットフォーム身元は他の AID にバインドされていません。\n現在の AID {aid} のバインド：{bindings}"
+language:
+  help: |-
+    現在の言語を設定します。
+    コマンド形式：/language {language}
+    利用可能な言語：{available}
+  current: "現在の言語：{language}"
+  unsupported: "言語 {language} はサポートされていません。利用可能な言語：{available}"
+  updated: "言語を {language} に設定しました。"

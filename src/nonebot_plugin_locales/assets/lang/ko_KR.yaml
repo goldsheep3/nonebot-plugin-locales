@@ -1,0 +1,25 @@
+bind:
+  help: |-
+    여러 플랫폼을 하나로 바인딩합니다.
+    명령 형식: /bind
+    bot이 바인딩 명령(/bind {token})을 생성합니다. 유효 기간 내에 대상 플랫폼의 bot에게 해당 명령을 보내 바인딩을 완료해야 합니다.
+  token_created: "바인딩 토큰이 생성되었습니다: /bind {token}\n대상 플랫폼에서 봇에게 이 명령을 보내 바인딩을 완료하세요. 토큰은 {ttl_minutes}분 후에 만료됩니다."
+  token_create_failed: "바인딩 토큰 생성에 실패했습니다. 다른 발급 작업이 진행 중일 수 있습니다. 다시 시도하세요."
+  token_invalid: "바인딩 토큰이 유효하지 않거나 만료되었습니다."
+  platform_conflict: "대상 AID는 이미 {platform} 플랫폼 신원에 바인딩되어 있습니다. 먼저 해제한 후 다시 시도하세요."
+  success: "바인딩 완료. 현재 플랫폼 신원이 AID {aid}에 바인딩되었습니다."
+  already_bound: "현재 플랫폼 신원은 이미 AID {aid}에 바인딩되어 있습니다."
+unbind:
+  restored: "바인딩 해제 완료. 현재 플랫폼 신원이 초기 AID {aid}로 복원되었습니다."
+  platform_restored: "바인딩 해제 완료. {platform} 플랫폼 신원이 초기 AID {aid}로 복원되었습니다."
+  platform_not_bound: "현재 AID는 {platform} 플랫폼 신원에 바인딩되어 있지 않습니다."
+  platform_already_origin: "{platform} 플랫폼 신원은 다른 AID에 바인딩되어 있지 않으며, 현재 AID는 {aid}입니다."
+  already_origin: "현재 플랫폼 신원은 다른 AID에 바인딩되어 있지 않습니다.\n현재 AID {aid}의 바인딩: {bindings}"
+language:
+  help: |-
+    현재 언어를 설정합니다.
+    명령 형식: /language {language}
+    사용 가능한 언어: {available}
+  current: "현재 언어: {language}"
+  unsupported: "언어 {language}는 지원되지 않습니다. 사용 가능한 언어: {available}"
+  updated: "언어가 {language}(으)로 설정되었습니다."
