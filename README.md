@@ -29,13 +29,13 @@
 本插件尚未发布到 PyPI，请通过 Git 仓库安装：
 
 ```bash
-uv add "git+https://github.com/goldsheep3/nonebot-plugin-locales.git@v0.1.0"
+uv add "git+https://github.com/goldsheep3/nonebot-plugin-locales.git@v0.2.0"
 ```
 
 或使用 pip：
 
 ```bash
-pip install "git+https://github.com/goldsheep3/nonebot-plugin-locales.git@v0.1.0"
+pip install "git+https://github.com/goldsheep3/nonebot-plugin-locales.git@v0.2.0"
 ```
 
 ## 配置
@@ -78,7 +78,8 @@ pip install "git+https://github.com/goldsheep3/nonebot-plugin-locales.git@v0.1.0
 assets/lang/
 ├── zh_CN.yaml
 ├── en_US.yaml
-└── ja.yaml
+├── ja.yaml
+└── ...
 ```
 
 ```yaml
