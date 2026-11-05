@@ -72,13 +72,13 @@ pip install "git+https://github.com/goldsheep3/nonebot-plugin-locales.git@v0.1.0
 
 ### 编辑语言资源
 
-语言资源为 YAML 文件，文件名严格为 `xx_XX`（如 `zh_CN.yaml`、`en_US.yaml`）：
+语言资源为 YAML 文件，文件名可以自由命名。语言代码和实际文件名的对应关系由插件内置的 `map.yaml` 决定；例如 `ja_JP` 会使用 `ja.yaml`。未在映射中声明的语言代码仍会按其自身名称查找文件。
 
 ```
 assets/lang/
 ├── zh_CN.yaml
 ├── en_US.yaml
-└── xx_XX.yaml
+└── ja.yaml
 ```
 
 ```yaml

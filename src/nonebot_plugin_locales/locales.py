@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import random
 from typing import Any, TypeAlias
 from pathlib import Path
@@ -20,7 +19,7 @@ from .config import plugin_config
 
 LocaleData = dict[str, Any]
 _MISSING = object()
-_LOCALE_FILE_STEM = re.compile(r"^[a-z]{2}_[A-Z]{2}$")
+_LANGUAGE_MAP_FILE = Path(__file__).with_name("map.yaml")
 
 
 Reply: TypeAlias = Callable[..., Awaitable[str]]
@@ -37,6 +36,37 @@ class LocaleFileError(LocaleError):
 class _SafeFormatMap(dict[str, object]):
     def __missing__(self, key: str) -> str:
         return "{" + key + "}"
+
+
+def _load_language_map(file: Path = _LANGUAGE_MAP_FILE) -> dict[str, str]:
+    try:
+        with file.open("r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+    except OSError as e:
+        raise LocaleFileError(f"failed to read language map {file}") from e
+    except yaml.YAMLError as e:
+        raise LocaleFileError(f"failed to parse language map {file}") from e
+
+    if not isinstance(data, dict):
+        raise LocaleFileError(f"{file} must contain a YAML mapping")
+
+    language_map: dict[str, str] = {}
+    for language_code, filename in data.items():
+        if not isinstance(language_code, str) or not isinstance(filename, str):
+            raise LocaleFileError(f"{file} must map language codes to file names")
+        try:
+            normalized_language = normalize_language_code(language_code)
+        except ValueError as e:
+            raise LocaleFileError(
+                f"invalid language code {language_code!r} in {file}"
+            ) from e
+        filename = filename.strip()
+        if not filename:
+            raise LocaleFileError(
+                f"empty locale file name for {language_code!r} in {file}"
+            )
+        language_map[normalized_language] = filename
+    return language_map
 
 
 class LocaleStore:
@@ -56,6 +86,7 @@ class LocaleStore:
             if fallback_language is not None
             else None
         )
+        self.language_map = _load_language_map()
         self.languages: dict[str, LocaleData] = {}
         self.reload()
 
@@ -69,10 +100,6 @@ class LocaleStore:
         for file in sorted(self.lang_dir.iterdir()):
             if file.suffix.lower() not in {".yaml", ".yml"}:
                 continue
-            if not _LOCALE_FILE_STEM.fullmatch(file.stem):
-                raise LocaleFileError(
-                    f"invalid locale file name {file.name}; expected xx_XX"
-                )
             language_code = file.stem
             if language_code in self.languages:
                 raise LocaleFileError(
@@ -107,18 +134,25 @@ class LocaleStore:
         return normalized_key
 
     def has_language(self, language_code: str) -> bool:
-        return normalize_language_code(language_code) in self.languages
+        return self.resolve_language(language_code) in self.languages
+
+    def resolve_language(self, language_code: str) -> str:
+        """Return the locale file name configured for a language code."""
+        normalized_language = normalize_language_code(language_code)
+        return self.language_map.get(normalized_language, normalized_language)
 
     def _language_chain(self, language_code: str | None) -> tuple[str, ...]:
         languages = (
-            normalize_language_code(language_code) if language_code else None,
+            language_code,
             self.fallback_language,
             self.default_language,
         )
         result: list[str] = []
         for language in languages:
-            if language and language not in result:
-                result.append(language)
+            if language:
+                resolved_language = self.resolve_language(language)
+                if resolved_language not in result:
+                    result.append(resolved_language)
         return tuple(result)
 
     def _lookup(self, language_code: str, key: str) -> object:

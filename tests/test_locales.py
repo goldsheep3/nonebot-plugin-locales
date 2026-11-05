@@ -37,14 +37,15 @@ def test_locale_store_normalizes_language_code(tmp_path: Path) -> None:
     assert store.render("message", "en-us") == "hello"
 
 
-@pytest.mark.parametrize("language_code", ["EN_US", "en-us", "en"])
-def test_locale_store_rejects_noncanonical_language_file_names(
+@pytest.mark.parametrize("language_code", ["EN_US", "en-us", "ja"])
+def test_locale_store_accepts_flexible_language_file_names(
     tmp_path: Path, language_code: str
 ) -> None:
     _write_language(tmp_path, language_code, "message: hello")
 
-    with pytest.raises(LocaleFileError, match="expected xx_XX"):
-        LocaleStore(tmp_path, default_language="en_US")
+    store = LocaleStore(tmp_path, default_language="en_US")
+
+    assert language_code in store.languages
 
 
 def test_locale_store_rejects_duplicate_canonical_language_file_names(
@@ -55,6 +56,15 @@ def test_locale_store_rejects_duplicate_canonical_language_file_names(
 
     with pytest.raises(LocaleFileError, match="duplicate locale language code en_US"):
         LocaleStore(tmp_path, default_language="en_US")
+
+
+def test_locale_store_resolves_language_aliases_from_map(tmp_path: Path) -> None:
+    _write_language(tmp_path, "ja", "message: こんにちは")
+    store = LocaleStore(tmp_path, default_language="ja_JP")
+
+    assert store.has_language("ja_JP")
+    assert store.render("message", "ja_JP") == "こんにちは"
+    assert store._language_chain("ja_JP") == ("ja",)
 
 
 def test_locale_store_uses_default_language_and_deduplicates_chain(

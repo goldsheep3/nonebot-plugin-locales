@@ -195,6 +195,7 @@ async def language_handle(
             )
         )
 
+    language_code = _LOCALE_STORE.resolve_language(language_code)
     if language_code not in languages:
         await language_matcher.finish(
             await reply(
