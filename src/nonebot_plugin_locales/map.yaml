@@ -1,0 +1,19 @@
+# 最终支持情况以该文件为准。设定时，会按后面的实际文件名进行设定。
+
+zh: zh_CN
+zh_CN: zh_CN
+# zh_TW: zh_TW
+zh_Hans: zh_CN
+# zh_Hant: zh_TW
+
+en: en_US
+en_US: en_US
+
+ja: ja
+ja_JP: ja
+
+ko: ko
+ko_KR: ko
+
+ru: ru
+ru_RU: ru
